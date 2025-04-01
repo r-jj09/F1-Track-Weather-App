@@ -23,14 +23,13 @@
     },
     {
         "round": 3,
-        "raceName": "Australian Grand Prix",
-        "circuitName": "Albert Park Circuit",
-        "date": "2025-03-15",
+        "raceName": "Japanese Grand Prix",
+        "circuitName": "Suzuka International Racing Course",
         "location": {
-            "country": "Australia",
-            "lat": -37.8497,
-            "long": 144.968
-        }
+            "lat": 34.84480117527523,
+            "long": 136.53824019390126
+        },
+        "date": "2025-03-29"
     },
     {
         "round": 4,
