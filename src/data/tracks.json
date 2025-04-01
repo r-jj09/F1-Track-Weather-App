@@ -1,0 +1,90 @@
+[
+    {
+        "round": 1,
+        "raceName": "Bahrain Grand Prix",
+        "circuitName": "Bahrain International Circuit",
+        "date": "2025-03-01",
+        "location": {
+            "country": "Bahrain",
+            "lat": 26.0325,
+            "long": 50.5106
+        }
+    },
+    {
+        "round": 2,
+        "raceName": "Saudi Arabian Grand Prix",
+        "circuitName": "Jeddah Corniche Circuit",
+        "date": "2025-03-08",
+        "location": {
+            "country": "Saudi Arabia",
+            "lat": 21.6319,
+            "long": 39.1044
+        }
+    },
+    {
+        "round": 3,
+        "raceName": "Australian Grand Prix",
+        "circuitName": "Albert Park Circuit",
+        "date": "2025-03-15",
+        "location": {
+            "country": "Australia",
+            "lat": -37.8497,
+            "long": 144.968
+        }
+    },
+    {
+        "round": 4,
+        "raceName": "Japanese Grand Prix",
+        "circuitName": "Suzuka International Racing Course",
+        "date": "2025-03-29",
+        "location": {
+            "country": "Japan",
+            "lat": 34.8431,
+            "long": 136.5419
+        }
+    },
+    {
+        "round": 5,
+        "raceName": "Chinese Grand Prix",
+        "circuitName": "Shanghai International Circuit",
+        "date": "2025-04-13",
+        "location": {
+            "country": "China",
+            "lat": 31.3389,
+            "long": 121.2207
+        }
+    },
+    {
+        "round": 6,
+        "raceName": "Miami Grand Prix",
+        "circuitName": "Miami International Autodrome",
+        "date": "2025-05-04",
+        "location": {
+            "country": "USA",
+            "lat": 25.9580,
+            "long": -80.2389
+        }
+    },
+    {
+        "round": 7,
+        "raceName": "Emilia Romagna Grand Prix",
+        "circuitName": "Imola (Autodromo Enzo e Dino Ferrari)",
+        "date": "2025-05-18",
+        "location": {
+            "country": "Italy",
+            "lat": 44.3439,
+            "long": 11.7167
+        }
+    },
+    {
+        "round": 8,
+        "raceName": "Monaco Grand Prix",
+        "circuitName": "Circuit de Monaco",
+        "date": "2025-05-25",
+        "location": {
+            "country": "Monaco",
+            "lat": 43.7347,
+            "long": 7.4206
+        }
+    }
+]
