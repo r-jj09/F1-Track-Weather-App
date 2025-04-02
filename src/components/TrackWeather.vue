@@ -34,9 +34,13 @@
 		<p>Track: {{ selectedTrack.circuitName }}</p>
 		<p>Date: {{ selectedTrack.date }}</p>
 
-		<p>Temp: {{ weatherData.current.temp }} °C</p>
-		<p>Condition: {{ weatherData.current.weather[0].description }}</p>
-		<p>UV Index: {{ weatherData.current.uvi }}</p>
+		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
+		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
+		<p>Current UV Index: {{ weatherData.current.uvi }}</p>
+		<!-- TODO Race Day Weather Data if possible  -->
+		<p>Race Day Temp: {{ weatherData.current.temp }} °C</p>
+		<p>Race Day Condition: {{ weatherData.current.weather[0].description }}</p>
+		<p>Race Day UV Index: {{ weatherData.current.uvi }}</p>
 	</div>
 
 	<div v-else>
