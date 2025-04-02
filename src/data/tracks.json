@@ -1,40 +1,40 @@
 [
     {
         "round": 1,
-        "raceName": "Bahrain Grand Prix",
-        "circuitName": "Bahrain International Circuit",
-        "date": "2025-03-01",
+        "raceName": "Australian Grand Prix",
+        "circuitName": "Albert Park Grand Prix Circuit",
+        "date": "2025-03-16",
         "location": {
-            "country": "Bahrain",
-            "lat": 26.0325,
-            "long": 50.5106
+            "country": "Australia",
+            "lat": -37.85034443583121,
+            "long": 144.9702204767105
         }
     },
     {
         "round": 2,
-        "raceName": "Saudi Arabian Grand Prix",
-        "circuitName": "Jeddah Corniche Circuit",
-        "date": "2025-03-08",
+        "raceName": "Chinese Grand Prix",
+        "circuitName": "Shanghai International Circuit",
+        "date": "2025-03-23",
         "location": {
-            "country": "Saudi Arabia",
-            "lat": 21.6319,
-            "long": 39.1044
+            "country": "China",
+            "lat": 31.339622707220244,
+            "long": 121.22165945767102
         }
     },
     {
         "round": 3,
         "raceName": "Japanese Grand Prix",
         "circuitName": "Suzuka International Racing Course",
+        "date": "2025-04-06",
         "location": {
             "lat": 34.84480117527523,
             "long": 136.53824019390126
-        },
-        "date": "2025-04-06"
+        }
     },
     {
         "round": 4,
-        "raceName": "Japanese Grand Prix",
-        "circuitName": "Suzuka International Racing Course",
+        "raceName": "Bahrain Grand Prix",
+        "circuitName": "Bahrain International Circuit",
         "date": "2025-03-29",
         "location": {
             "country": "Japan",

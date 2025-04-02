@@ -38,9 +38,9 @@
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
 		<p>Current UV Index: {{ weatherData.current.uvi }}</p>
 		<!-- TODO Race Day Weather Data if possible  -->
-		<p>Race Day Temp: {{ weatherData.current.temp }} °C</p>
+		<!-- <p>Race Day Temp: {{ weatherData.current.temp }} °C</p>
 		<p>Race Day Condition: {{ weatherData.current.weather[0].description }}</p>
-		<p>Race Day UV Index: {{ weatherData.current.uvi }}</p>
+		<p>Race Day UV Index: {{ weatherData.current.uvi }}</p> -->
 	</div>
 
 	<div v-else>
