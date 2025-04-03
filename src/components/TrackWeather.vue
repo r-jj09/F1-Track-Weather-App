@@ -3,16 +3,12 @@
 
 	import tracks from "@/data/tracks.json";
 
-	const now = new Date();
+	const props = defineProps(["track"]); // this gives you access to the track
 
-	// Find next race based on date
-	const nextRaceIndex = tracks.findIndex((track) => new Date(track.date) > now);
-	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
-	const selectedTrack = computed(() => tracks[trackIndex.value]);
 	const weatherData = ref(null);
 
 	const fetchWeather = async () => {
-		const { lat, long } = selectedTrack.value.location;
+		const { lat, long } = props.track.location;
 
 		const res = await fetch(
 			`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,daily,alerts&appid=${
@@ -22,6 +18,7 @@
 
 		const data = await res.json();
 		weatherData.value = data;
+		console.log("weatherData:", weatherData.value);
 	};
 
 	onMounted(() => {
@@ -29,10 +26,13 @@
 	});
 </script>
 <template>
+	<pre>{{ weatherData }}</pre>
+
 	<div v-if="weatherData && weatherData.current">
-		<h2>{{ selectedTrack.raceName }}</h2>
-		<p>Track: {{ selectedTrack.circuitName }}</p>
-		<p>Date: {{ selectedTrack.date }}</p>
+		<h2>{{ track.raceName }}</h2>
+		<p>{{ track.circuitName }}</p>
+		<p>{{ track.date }}</p>
+		<p>{{ track.country }}</p>
 
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
