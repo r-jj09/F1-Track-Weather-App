@@ -26,7 +26,7 @@
 	});
 </script>
 <template>
-	<pre>{{ weatherData }}</pre>
+	<!-- <pre>{{ weatherData }}</pre> -->
 
 	<div v-if="weatherData && weatherData.current">
 		<h2>{{ track.raceName }}</h2>

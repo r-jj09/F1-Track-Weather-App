@@ -2,6 +2,7 @@
 	import { ref } from "vue";
 	import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
+	import "swiper/css/bundle";
 	import tracks from "@/data/tracks.json";
 
 	import TrackWeather from "./components/TrackWeather.vue";
@@ -17,6 +18,7 @@
 		:space-between="0"
 		@slideChange="onSlideChange"
 		class="full-screen-swiper"
+		grab-cursor="true"
 	>
 		<SwiperSlide v-for="(track, index) in tracks" :key="index">
 			<TrackWeather :track="track" />
