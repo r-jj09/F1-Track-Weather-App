@@ -4,7 +4,6 @@
 	import "swiper/css";
 	import "swiper/css/bundle";
 	import tracks from "@/data/tracks.json";
-
 	import TrackWeather from "./components/TrackWeather.vue";
 
 	const now = new Date();
