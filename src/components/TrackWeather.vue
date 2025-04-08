@@ -41,20 +41,22 @@
 <template>
 	<!-- <pre>{{ weatherData }}</pre> -->
 
-	<div v-if="weatherData && weatherData.current && uvLevel">
-		<h2>{{ track.raceName }}</h2>
+	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
+		<div class="track-title-uv">
+			<p class="uv-badge" :style="{ backgroundColor: uvLevel.color }">
+				<span :style="{ fontWeight: 'bold' }">
+					{{ uvLevel.label }}
+				</span>
+			</p>
+			<h2>{{ track.raceName }}</h2>
+		</div>
 		<p>{{ track.circuitName }}</p>
 		<p>{{ track.date }}</p>
 		<p>{{ track.country }}</p>
-
+		<br />
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
-		<p>
-			UV Index:
-			<span :style="{ color: uvLevel.color, fontWeight: 'bold' }">
-				{{ uvLevel.label }}
-			</span>
-		</p>
+
 		<!-- TODO Race Day Weather Data if possible  -->
 	</div>
 
@@ -62,3 +64,40 @@
 		<p>Loading weather data...</p>
 	</div>
 </template>
+
+<style scoped>
+	.track-card {
+		background-color: #14a5a5;
+		border-radius: 8px;
+		padding: 20px;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		text-align: center;
+		width: 80%;
+		margin: auto;
+	}
+
+	.uv-badge:before {
+		content: "";
+		display: absolute;
+		width: 100%;
+		height: 2px;
+		background-image: url("/public/uv-index-svgrepo-com.svg");
+		margin-bottom: 10px;
+	}
+
+	.track-title-uv {
+		position: relative;
+	}
+
+	.uv-badge {
+		top: -35px;
+		right: 274px;
+		position: absolute;
+		color: white;
+		border-radius: 15px;
+		padding: 5px 10px;
+		margin-top: 10px;
+		display: inline-block;
+		transform: rotate(15deg);
+	}
+</style>
