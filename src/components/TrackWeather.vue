@@ -30,12 +30,14 @@
 
 		if (uvi === undefined || uvi === null) return null;
 
-		if (uvi <= 2) return { label: "Low", color: "green" };
-		if (uvi <= 5) return { label: "Moderate", color: "yellow" };
-		if (uvi <= 7) return { label: "High", color: "orange" };
-		if (uvi <= 10) return { label: "Very High", color: "red" };
+		if (uvi <= 2) return { label: "Low", color: "green", textColor: "white" };
+		if (uvi <= 5)
+			return { label: "Moderate", color: "yellow", textColor: "black" };
+		if (uvi <= 7) return { label: "High", color: "orange", textColor: "white" };
+		if (uvi <= 10)
+			return { label: "Very High", color: "red", textColor: "white" };
 
-		return { label: "Extreme", color: "purple" };
+		return { label: "Extreme", color: "purple", textColor: "white" };
 	});
 </script>
 <template>
@@ -43,7 +45,11 @@
 
 	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
 		<div class="track-title-uv">
-			<p class="uv-badge" :style="{ backgroundColor: uvLevel.color }">
+			<p
+				class="uv-badge"
+				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
+			>
+				<span>UV Index: </span>
 				<span :style="{ fontWeight: 'bold' }">
 					{{ uvLevel.label }}
 				</span>
@@ -91,7 +97,7 @@
 
 	.uv-badge {
 		top: -35px;
-		right: 274px;
+		right: 0;
 		position: absolute;
 		color: white;
 		border-radius: 15px;
