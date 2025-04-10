@@ -2,42 +2,57 @@
 	import { ref, onMounted, computed, watch } from "vue";
 	import tracks from "@/data/tracks.json";
 
+	const weatherCache = {};
 	const weatherData = ref(null);
 	const raceDayForecast = ref(null);
 
-	const props = defineProps(["track"]); // this gives you access to the track
+	const props = defineProps(["track"]);
 
 	const fetchWeather = async () => {
 		const { lat, long } = props.track.location;
-		const res = await fetch(
-			`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
-				import.meta.env.VITE_WEATHER_API_KEY
-			}&units=metric`
-		);
+		const cacheKey = `${lat},${long}`;
 
-		const data = await res.json();
-		weatherData.value = data;
-
-		if (props.track.isNext && data.daily) {
-			const raceTimestamp = Math.floor(
-				new Date(props.track.date).getTime() / 1000
-			);
-
-			const forecastMatch = data.daily.find(
-				(day) => Math.abs(day.dt - raceTimestamp) < 43200
-			);
-
-			raceDayForecast.value = forecastMatch || null;
+		if (weatherCache[cacheKey]) {
+			weatherData.value = weatherCache[cacheKey].weather;
+			raceDayForecast.value = weatherCache[cacheKey].forecast;
+			return;
 		}
 
 		try {
-			const res = await fetch(url);
-			const data = await res.json();
-			console.log("✅ API response:", data);
+			const res = await fetch(
+				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
+					import.meta.env.VITE_WEATHER_API_KEY
+				}&units=metric`
+			);
 
+			const data = await res.json();
 			weatherData.value = data;
+
+			let forecast = null;
+			if (props.track.isNext && data.daily) {
+				const raceDate = new Date(props.track.date);
+
+				forecast =
+					data.daily.find((day) => {
+						const forecastDate = new Date(day.dt * 1000);
+						return (
+							forecastDate.getUTCFullYear() === raceDate.getUTCFullYear() &&
+							forecastDate.getUTCMonth() === raceDate.getUTCMonth() &&
+							forecastDate.getUTCDate() === raceDate.getUTCDate()
+						);
+					}) || null;
+			}
+
+			raceDayForecast.value = forecast;
+
+			weatherCache[cacheKey] = {
+				weather: data,
+				forecast,
+			};
 		} catch (err) {
 			console.error("❌ Fetch error:", err);
+			weatherData.value = null;
+			raceDayForecast.value = null;
 		}
 	};
 
