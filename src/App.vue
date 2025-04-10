@@ -28,7 +28,7 @@
 		grab-cursor="true"
 	>
 		<SwiperSlide v-for="(track, index) in tracks" :key="index">
-			<TrackWeather :track="selectedTrack" />
+			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>
 </template>

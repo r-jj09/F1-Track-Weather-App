@@ -9,12 +9,6 @@
 
 	const fetchWeather = async () => {
 		const { lat, long } = props.track.location;
-		const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
-			import.meta.env.VITE_WEATHER_API_KEY
-		}&units=metric`;
-
-		console.log("📡 Fetching from:", url);
-
 		const res = await fetch(
 			`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
 				import.meta.env.VITE_WEATHER_API_KEY
@@ -42,7 +36,6 @@
 			console.log("✅ API response:", data);
 
 			weatherData.value = data;
-			// Forecast logic...
 		} catch (err) {
 			console.error("❌ Fetch error:", err);
 		}
