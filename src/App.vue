@@ -27,7 +27,7 @@
 		class="full-screen-swiper"
 		grab-cursor="true"
 	>
-		<SwiperSlide v-for="(track, index) in tracks" :key="index">
+		<SwiperSlide v-for="(track, index) in tracksWithLabel" :key="index">
 			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>

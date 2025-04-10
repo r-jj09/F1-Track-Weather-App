@@ -45,7 +45,7 @@
 		fetchWeather();
 	});
 
-	watch(() => props.track, fetchWeather);
+	watch(() => props.track, fetchWeather, { immediate: true });
 
 	const uvLevel = computed(() => {
 		const uvi = weatherData.value?.current?.uvi;
@@ -74,24 +74,23 @@
 					{{ uvLevel.label }}
 				</span>
 			</p>
+			<div v-if="track.isNext">
+				<p class="nextRace-text">Up next</p>
+			</div>
 			<h2>{{ track.raceName }}</h2>
 		</div>
 		<p>{{ track.circuitName }}</p>
 		<p>{{ track.date }}</p>
 		<p>{{ track.country }}</p>
-		<br />
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
 		<!-- TODO Race Day Weather Data if possible  -->
-		<div v-if="track.isNext && raceForecast">
-			<p>
-				Race Day Forecast:
-				{{ Math.round(raceForecast.temp.day) }}°C,
-				{{ raceForecast.weather[0].description }}
-			</p>
+		<br />
+		<div v-if="track.isNext && raceDayForecast">
+			<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }} °C</p>
+			<p>Current Condition: {{ raceDayForecast.weather[0].description }}</p>
 		</div>
-
-		<div v-else-if="track.isNext && !raceForecast">
+		<div v-else-if="track.isNext && !raceDayForecast">
 			<p>Race day forecast not available yet.</p>
 		</div>
 	</div>
@@ -137,5 +136,11 @@
 		margin-top: 10px;
 		display: inline-block;
 		transform: rotate(15deg);
+	}
+
+	.nextRace-text {
+		text-transform: uppercase;
+		font-size: 25px;
+		color: #860303;
 	}
 </style>
