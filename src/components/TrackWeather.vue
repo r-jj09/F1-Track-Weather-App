@@ -1,29 +1,58 @@
 <script setup>
-	import { ref, onMounted, computed } from "vue";
-
+	import { ref, onMounted, computed, watch } from "vue";
 	import tracks from "@/data/tracks.json";
+
+	const weatherData = ref(null);
+	const raceDayForecast = ref(null);
 
 	const props = defineProps(["track"]); // this gives you access to the track
 
-	const weatherData = ref(null);
-
 	const fetchWeather = async () => {
 		const { lat, long } = props.track.location;
+		const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
+			import.meta.env.VITE_WEATHER_API_KEY
+		}&units=metric`;
+
+		console.log("📡 Fetching from:", url);
 
 		const res = await fetch(
-			`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,daily,alerts&appid=${
+			`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
 				import.meta.env.VITE_WEATHER_API_KEY
 			}&units=metric`
 		);
 
 		const data = await res.json();
 		weatherData.value = data;
-		console.log("weatherData:", weatherData.value);
+
+		if (props.track.isNext && data.daily) {
+			const raceTimestamp = Math.floor(
+				new Date(props.track.date).getTime() / 1000
+			);
+
+			const forecastMatch = data.daily.find(
+				(day) => Math.abs(day.dt - raceTimestamp) < 43200
+			);
+
+			raceDayForecast.value = forecastMatch || null;
+		}
+
+		try {
+			const res = await fetch(url);
+			const data = await res.json();
+			console.log("✅ API response:", data);
+
+			weatherData.value = data;
+			// Forecast logic...
+		} catch (err) {
+			console.error("❌ Fetch error:", err);
+		}
 	};
 
 	onMounted(() => {
 		fetchWeather();
 	});
+
+	watch(() => props.track, fetchWeather);
 
 	const uvLevel = computed(() => {
 		const uvi = weatherData.value?.current?.uvi;
@@ -41,8 +70,6 @@
 	});
 </script>
 <template>
-	<!-- <pre>{{ weatherData }}</pre> -->
-
 	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
 		<div class="track-title-uv">
 			<p
@@ -62,11 +89,23 @@
 		<br />
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
-
 		<!-- TODO Race Day Weather Data if possible  -->
+		<div v-if="track.isNext && raceForecast">
+			<p>
+				Race Day Forecast:
+				{{ Math.round(raceForecast.temp.day) }}°C,
+				{{ raceForecast.weather[0].description }}
+			</p>
+		</div>
+
+		<div v-else-if="track.isNext && !raceForecast">
+			<p>Race day forecast not available yet.</p>
+		</div>
 	</div>
 
 	<div v-else>
+		<!-- TODO Loading Animation and maybe a message after a certain amout of time (it will run to this branch of I have no more free API calls) -->
+
 		<p>Loading weather data...</p>
 	</div>
 </template>

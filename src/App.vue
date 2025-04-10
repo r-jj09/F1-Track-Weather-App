@@ -8,6 +8,14 @@
 
 	const now = new Date();
 	const nextRaceIndex = tracks.findIndex((track) => new Date(track.date) > now);
+
+	const tracksWithLabel = tracks.map((track, index) => ({
+		...track,
+		isNext: index === nextRaceIndex,
+	}));
+
+	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
+	const selectedTrack = tracksWithLabel[trackIndex.value];
 </script>
 
 <template>
@@ -20,7 +28,7 @@
 		grab-cursor="true"
 	>
 		<SwiperSlide v-for="(track, index) in tracks" :key="index">
-			<TrackWeather :track="track" />
+			<TrackWeather :track="selectedTrack" />
 		</SwiperSlide>
 	</Swiper>
 </template>
