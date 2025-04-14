@@ -8,6 +8,19 @@
 
 	const props = defineProps(["track"]);
 
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+	const isRaceDay = computed(() => {
+		const raceDate = new Date(props.track.date);
+		const raceDay = new Date(
+			raceDate.getFullYear(),
+			raceDate.getMonth(),
+			raceDate.getDate()
+		);
+		return raceDay.getTime() === today.getTime();
+	});
+
 	const fetchWeather = async () => {
 		const { lat, long } = props.track.location;
 		const cacheKey = `${lat},${long}`;
@@ -99,26 +112,34 @@
 		<p>{{ track.country }}</p>
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
-		<!-- TODO Race Day Weather Data if possible  -->
 		<br />
 		<div v-if="track.isNext && raceDayForecast">
-			<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }} °C</p>
-			<p>Race Day Condition: {{ raceDayForecast.weather[0].description }}</p>
+			<p>
+				Race Day Forecast Temp: {{ Math.round(raceDayForecast.temp.day) }} °C
+			</p>
+			<p>
+				Race Day Forecast Condition:
+				{{ raceDayForecast.weather[0].description }}
+			</p>
 		</div>
 		<div v-else-if="track.isNext && !raceDayForecast">
 			<p>Race day forecast not available yet.</p>
 		</div>
 	</div>
-
 	<div v-else>
 		<!-- TODO Loading Animation and maybe a message after a certain amout of time (it will run to this branch of I have no more free API calls) Badsh*t crazy idea https://codepen.io/tholman/pen/AvWXMr -->
-
+		<div class="loader"></div>
 		<p>Loading weather data...</p>
 	</div>
 </template>
 
 <style scoped>
 	.track-card {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		min-height: 50vh;
 		background-color: #14a5a5;
 		border-radius: 8px;
 		padding: 20px;
@@ -157,5 +178,40 @@
 		text-transform: uppercase;
 		font-size: 25px;
 		color: #860303;
+	}
+
+	/* Loading */
+
+	.loader {
+		width: 44.8px;
+		height: 44.8px;
+		position: relative;
+		transform: rotate(45deg);
+	}
+
+	.loader:before,
+	.loader:after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: 50% 50% 0 50%;
+		background: #0000;
+		background-image: radial-gradient(
+			circle 11.2px at 50% 50%,
+			#0000 94%,
+			#ff4747
+		);
+	}
+
+	.loader:after {
+		animation: pulse-ytk0dhmd 1s infinite;
+		transform: perspective(336px) translateZ(0px);
+	}
+
+	@keyframes pulse-ytk0dhmd {
+		to {
+			transform: perspective(336px) translateZ(168px);
+			opacity: 0;
+		}
 	}
 </style>

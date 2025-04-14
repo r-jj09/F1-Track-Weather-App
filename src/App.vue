@@ -2,12 +2,22 @@
 	import { ref } from "vue";
 	import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
-	import "swiper/css/bundle";
+	import "swiper/css/pagination";
+	import "swiper/css/navigation";
 	import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
 
 	const now = new Date();
-	const nextRaceIndex = tracks.findIndex((track) => new Date(track.date) > now);
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const nextRaceIndex = tracks.findIndex((track) => {
+		const raceDate = new Date(track.date);
+		const raceDay = new Date(
+			raceDate.getFullYear(),
+			raceDate.getMonth(),
+			raceDate.getDate()
+		);
+		return raceDay >= today;
+	});
 
 	const tracksWithLabel = tracks.map((track, index) => ({
 		...track,
