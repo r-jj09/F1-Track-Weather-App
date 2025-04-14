@@ -130,7 +130,7 @@
 	</div>
 	<div v-else>
 		<!-- TODO Loading Animation and maybe a message after a certain amout of time (it will run to this branch of I have no more free API calls) Badsh*t crazy idea https://codepen.io/tholman/pen/AvWXMr -->
-		<div class="loader"></div>
+
 		<p>Loading weather data...</p>
 	</div>
 </template>
