@@ -43,6 +43,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background-color: #f0f0f0; /* Light background for better visibility */
+		background-color: #f0f0f0;
 	}
 </style>
