@@ -1,12 +1,16 @@
+const weatherCache = {}
+
 <script setup>
-	const weatherCache = {};
 	import { ref, onMounted, computed, watch } from "vue";
 	import tracks from "@/data/tracks.json";
 
+	const props = defineProps(["track"]);
+	const { lat, long } = props.track.location;
+
+	const cacheKey = `${lat.toFixed(4)},${long.toFixed(4)}`;
+
 	const weatherData = ref(null);
 	const raceDayForecast = ref(null);
-
-	const props = defineProps(["track"]);
 
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -23,7 +27,7 @@
 
 	const fetchWeather = async () => {
 		const { lat, long } = props.track.location;
-		const cacheKey = `${lat},${long}`;
+		// const cacheKey = `${lat},${long}`;
 
 		if (weatherCache[cacheKey]) {
 			weatherData.value = weatherCache[cacheKey].weather;
@@ -89,8 +93,6 @@
 
 		return { label: "Extreme", color: "purple", textColor: "white" };
 	});
-
-	const cacheKey = `${lat.toFixed(4)},${long.toFixed(4)}`;
 </script>
 <template>
 	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
