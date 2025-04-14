@@ -103,7 +103,7 @@
 		<br />
 		<div v-if="track.isNext && raceDayForecast">
 			<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }} °C</p>
-			<p>Current Condition: {{ raceDayForecast.weather[0].description }}</p>
+			<p>Race Day Condition: {{ raceDayForecast.weather[0].description }}</p>
 		</div>
 		<div v-else-if="track.isNext && !raceDayForecast">
 			<p>Race day forecast not available yet.</p>
