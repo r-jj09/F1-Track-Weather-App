@@ -1,6 +1,5 @@
-const weatherCache = {}
-
 <script setup>
+	const weatherCache = {};
 	import { ref, onMounted, computed, watch } from "vue";
 	import tracks from "@/data/tracks.json";
 
