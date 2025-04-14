@@ -1,8 +1,9 @@
+const weatherCache = {}
+
 <script setup>
 	import { ref, onMounted, computed, watch } from "vue";
 	import tracks from "@/data/tracks.json";
 
-	const weatherCache = {};
 	const weatherData = ref(null);
 	const raceDayForecast = ref(null);
 
@@ -89,6 +90,8 @@
 
 		return { label: "Extreme", color: "purple", textColor: "white" };
 	});
+
+	const cacheKey = `${lat.toFixed(4)},${long.toFixed(4)}`;
 </script>
 <template>
 	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
