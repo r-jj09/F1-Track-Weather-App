@@ -1,6 +1,6 @@
 <script setup>
 	import { ref, onMounted, computed, watch } from "vue";
-	import { fetchWeatherWithCache } from "../utils/weatherCache";
+	import { fetchWeatherWithCache } from "../weatherCache.js";
 
 	const props = defineProps(["track"]);
 	const { lat, long } = props.track.location;
