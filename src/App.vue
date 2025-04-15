@@ -26,6 +26,10 @@
 
 	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
 	const selectedTrack = tracksWithLabel[trackIndex.value];
+
+	const onSlideChange = (swiper) => {
+		trackIndex.value = swiper.activeIndex;
+	};
 </script>
 
 <template>
@@ -35,7 +39,7 @@
 		:space-between="0"
 		@slideChange="onSlideChange"
 		class="full-screen-swiper"
-		grab-cursor="true"
+		:grab-cursor="true"
 	>
 		<SwiperSlide v-for="(track, index) in tracksWithLabel" :key="index">
 			<TrackWeather :track="track" />
