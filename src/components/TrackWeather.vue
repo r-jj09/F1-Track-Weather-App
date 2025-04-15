@@ -1,7 +1,5 @@
 <script setup>
-	import { ref, onMounted, computed, watch } from "vue";
-	import { fetchWeatherWithCache } from "../weatherCache.js";
-
+	import { ref, onMounted, computed, watch, defineEmits } from "vue";
 	const props = defineProps(["track"]);
 	const { lat, long } = props.track.location;
 
@@ -33,11 +31,27 @@
 			console.error("❌ Fetch error:", err);
 			weatherData.value = null;
 			raceDayForecast.value = null;
+		} finally {
+			emit("data-loaded", true);
 		}
 	};
 
 	onMounted(() => {
 		fetchWeather();
+	});
+
+	import Typed from "typed.js";
+	const loading = ref(null);
+
+	onMounted(() => {
+		if (loading.value) {
+			new Typed(loading.value, {
+				strings: ["Loading Weather Data...", "Please Wait..."],
+				typeSpeed: 50,
+				backSpeed: 50,
+				loop: true,
+			});
+		}
 	});
 
 	watch(() => props.track, fetchWeather, { immediate: true });
@@ -165,7 +179,8 @@
 		justify-content: center;
 		align-items: center;
 	}
-	.loading {
-		font-size: 25px;
+	.loading,
+	.typed-cursor {
+		font-size: 25px !important;
 	}
 </style>

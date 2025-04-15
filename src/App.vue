@@ -1,5 +1,5 @@
 <script setup>
-	import { ref } from "vue";
+	import { ref, computed } from "vue";
 	import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
 	import "swiper/css/pagination";
@@ -9,6 +9,7 @@
 
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
 	const nextRaceIndex = tracks.findIndex((track) => {
 		const raceDate = new Date(track.date);
 		const raceDay = new Date(
@@ -25,7 +26,9 @@
 	}));
 
 	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
-	const selectedTrack = tracksWithLabel[trackIndex.value];
+	const selectedTrack = computed(() => tracksWithLabel[trackIndex.value]);
+
+	const dataLoaded = ref(false);
 
 	const onSlideChange = (swiper) => {
 		trackIndex.value = swiper.activeIndex;
@@ -37,13 +40,22 @@
 		:slides-per-view="1"
 		:initial-slide="nextRaceIndex"
 		:space-between="0"
-		@slideChange="onSlideChange"
-		class="full-screen-swiper"
 		:grab-cursor="true"
+		class="full-screen-swiper"
+		@slideChange="onSlideChange"
 	>
-		<SwiperSlide v-for="(track, index) in tracksWithLabel" :key="index">
-			<TrackWeather :track="track" />
+		<SwiperSlide v-if="!dataLoaded">
+			<TrackWeather
+				:track="tracksWithLabel[nextRaceIndex]"
+				@data-loaded="dataLoaded = true"
+			/>
 		</SwiperSlide>
+
+		<template v-else>
+			<SwiperSlide v-for="(track, index) in tracksWithLabel" :key="index">
+				<TrackWeather :track="track" />
+			</SwiperSlide>
+		</template>
 	</Swiper>
 </template>
 
