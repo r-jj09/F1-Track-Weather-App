@@ -1,13 +1,7 @@
-const weatherCache = {}
-
 <script setup>
-	import { ref, onMounted, computed, watch } from "vue";
-	import tracks from "@/data/tracks.json";
-
+	import { ref, onMounted, computed, watch, defineEmits } from "vue";
 	const props = defineProps(["track"]);
 	const { lat, long } = props.track.location;
-
-	const cacheKey = `${lat.toFixed(4)},${long.toFixed(4)}`;
 
 	const weatherData = ref(null);
 	const raceDayForecast = ref(null);
@@ -15,6 +9,7 @@ const weatherCache = {}
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+	// Check if the race day is today
 	const isRaceDay = computed(() => {
 		const raceDate = new Date(props.track.date);
 		const raceDay = new Date(
@@ -25,51 +20,19 @@ const weatherCache = {}
 		return raceDay.getTime() === today.getTime();
 	});
 
+	// Fetch weather data using the centralized cache manager
 	const fetchWeather = async () => {
-		const { lat, long } = props.track.location;
-		// const cacheKey = `${lat},${long}`;
-
-		if (weatherCache[cacheKey]) {
-			weatherData.value = weatherCache[cacheKey].weather;
-			raceDayForecast.value = weatherCache[cacheKey].forecast;
-			return;
-		}
-
 		try {
-			const res = await fetch(
-				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
-					import.meta.env.VITE_WEATHER_API_KEY
-				}&units=metric`
-			);
-
-			const data = await res.json();
-			weatherData.value = data;
-
-			let forecast = null;
-			if (props.track.isNext && data.daily) {
-				const raceDate = new Date(props.track.date);
-
-				forecast =
-					data.daily.find((day) => {
-						const forecastDate = new Date(day.dt * 1000);
-						return (
-							forecastDate.getUTCFullYear() === raceDate.getUTCFullYear() &&
-							forecastDate.getUTCMonth() === raceDate.getUTCMonth() &&
-							forecastDate.getUTCDate() === raceDate.getUTCDate()
-						);
-					}) || null;
-			}
-
+			const { weather, raceDayForecast: forecast } =
+				await fetchWeatherWithCache(lat, long, props.track.date);
+			weatherData.value = weather;
 			raceDayForecast.value = forecast;
-
-			weatherCache[cacheKey] = {
-				weather: data,
-				forecast,
-			};
 		} catch (err) {
 			console.error("❌ Fetch error:", err);
 			weatherData.value = null;
 			raceDayForecast.value = null;
+		} finally {
+			emit("data-loaded", true);
 		}
 	};
 
@@ -77,37 +40,38 @@ const weatherCache = {}
 		fetchWeather();
 	});
 
-	watch(() => props.track, fetchWeather, { immediate: true });
+	import Typed from "typed.js";
+	const loading = ref(null);
 
-	const uvLevel = computed(() => {
-		const uvi = weatherData.value?.current?.uvi;
-
-		if (uvi === undefined || uvi === null) return null;
-
-		if (uvi <= 2) return { label: "Low", color: "green", textColor: "white" };
-		if (uvi <= 5)
-			return { label: "Moderate", color: "yellow", textColor: "black" };
-		if (uvi <= 7) return { label: "High", color: "orange", textColor: "white" };
-		if (uvi <= 10)
-			return { label: "Very High", color: "red", textColor: "white" };
-
-		return { label: "Extreme", color: "purple", textColor: "white" };
+	onMounted(() => {
+		if (loading.value) {
+			new Typed(loading.value, {
+				strings: ["Loading Weather Data...", "Please Wait..."],
+				typeSpeed: 50,
+				backSpeed: 50,
+				loop: true,
+			});
+		}
 	});
+
+	watch(() => props.track, fetchWeather, { immediate: true });
 </script>
+
 <template>
-	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
+	<div class="track-card" v-if="weatherData">
 		<div class="track-title-uv">
 			<p
 				class="uv-badge"
 				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
 			>
 				<span>UV Index: </span>
-				<span :style="{ fontWeight: 'bold' }">
-					{{ uvLevel.label }}
-				</span>
+				<span :style="{ fontWeight: 'bold' }">{{ uvLevel.label }}</span>
 			</p>
-			<div v-if="track.isNext">
-				<p class="nextRace-text">Up next</p>
+			<div v-if="isRaceDay">
+				<p class="nextRace-text">Race Day</p>
+			</div>
+			<div v-else-if="track.isNext">
+				<p class="nextRace-text">Up Next</p>
 			</div>
 			<h2>{{ track.raceName }}</h2>
 		</div>
@@ -116,7 +80,6 @@ const weatherCache = {}
 		<p>{{ track.country }}</p>
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
-		<br />
 		<div v-if="track.isNext && raceDayForecast">
 			<p>
 				Race Day Forecast Temp: {{ Math.round(raceDayForecast.temp.day) }} °C
@@ -131,8 +94,12 @@ const weatherCache = {}
 		</div>
 	</div>
 	<div v-else>
-		<!-- TODO Loading Animation and maybe a message after a certain amout of time (it will run to this branch of I have no more free API calls) Badsh*t crazy idea https://codepen.io/tholman/pen/AvWXMr -->
-		<p>Loading weather data...</p>
+		<div class="hourglass">
+			<i class="fa-solid fa-hourglass fa-2xl"></i>
+		</div>
+		<div class="loading-text">
+			<span class="loading" ref="loading"></span>
+		</div>
 	</div>
 </template>
 
@@ -142,9 +109,9 @@ const weatherCache = {}
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		min-height: 50vh;
+		min-height: 60vh;
 		background-color: #14a5a5;
-		border-radius: 8px;
+		border-radius: 25px;
 		padding: 20px;
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 		text-align: center;
@@ -183,38 +150,37 @@ const weatherCache = {}
 		color: #860303;
 	}
 
-	/* Loading */
-
-	.loader {
-		width: 44.8px;
-		height: 44.8px;
-		position: relative;
-		transform: rotate(45deg);
+	.hourglass {
+		padding: 10px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 	}
 
-	.loader:before,
-	.loader:after {
-		content: "";
-		position: absolute;
-		inset: 0;
-		border-radius: 50% 50% 0 50%;
-		background: #0000;
-		background-image: radial-gradient(
-			circle 11.2px at 50% 50%,
-			#0000 94%,
-			#ff4747
-		);
+	.fa-hourglass {
+		animation: flip 2s ease-in-out infinite;
 	}
 
-	.loader:after {
-		animation: pulse-ytk0dhmd 1s infinite;
-		transform: perspective(336px) translateZ(0px);
-	}
-
-	@keyframes pulse-ytk0dhmd {
-		to {
-			transform: perspective(336px) translateZ(168px);
-			opacity: 0;
+	@keyframes flip {
+		0% {
+			transform: rotate(0deg);
 		}
+		50% {
+			transform: rotate(180deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+	.loading-text {
+		margin: 2px;
+		padding: 30px;
+		display: inline-flex;
+		justify-content: center;
+		align-items: center;
+	}
+	.loading,
+	.typed-cursor {
+		font-size: 25px !important;
 	}
 </style>
