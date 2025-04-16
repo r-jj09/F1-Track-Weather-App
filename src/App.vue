@@ -56,3 +56,5 @@
 		background-color: #f0f0f0;
 	}
 </style>
+
+<!-- ! Fix the repeat of API calls. Move the API request to App.vue and go through all the 24 tracks once. Then pass that to the TrackWeather.vue to make the Swiper with said data. No repeat of the API call and no running out of the daily limit.-->
