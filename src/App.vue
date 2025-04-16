@@ -35,7 +35,7 @@
 		:space-between="0"
 		@slideChange="onSlideChange"
 		class="full-screen-swiper"
-		grab-cursor="true"
+		:grab-cursor="true"
 	>
 		<SwiperSlide v-for="(track, index) in tracksWithLabel" :key="index">
 			<TrackWeather :track="track" />
