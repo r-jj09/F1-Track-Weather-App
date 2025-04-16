@@ -1,7 +1,6 @@
 <script setup>
 	const weatherCache = {};
 	import { ref, onMounted, computed, watch } from "vue";
-	import tracks from "@/data/tracks.json";
 
 	const weatherData = ref(null);
 	const raceDayForecast = ref(null);
@@ -102,11 +101,11 @@
 					{{ uvLevel.label }}
 				</span>
 			</p>
-			<div v-if="track.isNext">
-				<p class="nextRace-text">Up next</p>
+			<div v-if="isRaceDay">
+				<p class="nextRace-text">Race Day</p>
 			</div>
-			<div v-if="track.isRaceDay">
-				<p class="nextRace-text">Race Day!</p>
+			<div v-else-if="track.isNext">
+				<p class="nextRace-text">Up Next</p>
 			</div>
 			<h2>{{ track.raceName }}</h2>
 		</div>
