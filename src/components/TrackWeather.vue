@@ -110,7 +110,16 @@
 			<h2>{{ track.raceName }}</h2>
 		</div>
 		<p>{{ track.circuitName }}</p>
-		<p>{{ track.date }}</p>
+		<p>
+			{{
+				new Date(track.date).toLocaleDateString("en-US", {
+					weekday: "long",
+					year: "numeric",
+					month: "short",
+					day: "numeric",
+				})
+			}}
+		</p>
 		<p>{{ track.country }}</p>
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
