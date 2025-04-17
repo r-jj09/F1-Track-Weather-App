@@ -1,13 +1,13 @@
 <script setup>
-	import { ref, onMounted, computed, watch } from "vue";
+	import { computed } from "vue";
 
-	defineProps({
+	const { track } = defineProps({
 		track: Object,
-		weatherData: Object,
 	});
 
+	// UV Index
 	const uvLevel = computed(() => {
-		const uvi = weatherData.value?.current?.uvi;
+		const uvi = track.weather?.current?.uvi;
 
 		if (uvi === undefined || uvi === null) return null;
 
@@ -21,21 +21,59 @@
 		return { label: "Extreme", color: "purple", textColor: "white" };
 	});
 
-	// const isRaceDay = computed(() => {
-	// 	const raceDate = new Date(tracksWithNextIndicator.date);
-	// 	const raceDay = new Date(
-	// 		raceDate.getFullYear(),
-	// 		raceDate.getMonth(),
-	// 		raceDate.getDate()
-	// 	);
-	// 	return;
-	// 	raceDay.getTime() === today.getTime();
-	// });
+	// Is it Race Day?
+	const isRaceDay = computed(() => {
+		const today = new Date();
+		const todayDateOnly = new Date(
+			today.getFullYear(),
+			today.getMonth(),
+			today.getDate()
+		);
+
+		const raceDate = new Date(track.date);
+		const raceDateOnly = new Date(
+			raceDate.getFullYear(),
+			raceDate.getMonth(),
+			raceDate.getDate()
+		);
+
+		return raceDateOnly.getTime() === todayDateOnly.getTime();
+	});
+
+	// Race Day Forecast
+	const raceDayForecast = computed(() => {
+		// if (!isRaceDay.value) return null;
+
+		const forecastArray = track.weather?.daily;
+		if (!forecastArray) return null;
+
+		const raceDate = new Date(track.date);
+
+		// Find the forecast for the race day
+		const match = forecastArray.find((day) => {
+			const forecastDate = new Date(day.dt * 1000);
+			return (
+				forecastDate.getUTCFullYear() === raceDate.getUTCFullYear() &&
+				forecastDate.getUTCMonth() === raceDate.getUTCMonth() &&
+				forecastDate.getUTCDate() === raceDate.getUTCDate()
+			);
+		});
+
+		return match || null;
+	});
 </script>
+
 <template>
-	<!-- <div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
+	<div class="track-card">
 		<div class="track-title-uv">
+			<div v-if="isRaceDay">
+				<p class="nextRace-text">Race Day</p>
+			</div>
+			<div v-else-if="track.isNext">
+				<p class="nextRace-text">Up Next</p>
+			</div>
 			<p
+				v-if="uvLevel"
 				class="uv-badge"
 				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
 			>
@@ -44,36 +82,32 @@
 					{{ uvLevel.label }}
 				</span>
 			</p>
-			<div v-if="isRaceDay">
-				<p class="nextRace-text">Race Day</p>
-			</div>
-			<div v-else-if="track.isNext">
-				<p class="nextRace-text">Up Next</p>
-			</div>
+
 			<h2>{{ track.raceName }}</h2>
 		</div>
-		<p>{{ track.circuitName }}</p>
-		<p>{{ track.date }}</p>
-		<p>{{ track.country }}</p>
-		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
-		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
-		<br />
-		<div v-if="track.isNext && raceDayForecast">
+		<h2>{{ track.date }}</h2>
+		<p>{{ track.circuitName }}, {{ track.country }}</p>
+		<div v-if="track.weather">
+			<p>Current temperature: {{ Math.round(track.weather.current.temp) }}°C</p>
 			<p>
-				Race Day Forecast Temp: {{ Math.round(raceDayForecast.temp.day) }} °C
+				Current Condition: {{ track.weather.current.weather[0].description }}
 			</p>
-			<p>
-				Race Day Forecast Condition:
-				{{ raceDayForecast.weather[0].description }}
-			</p>
+			<br />
+			<div v-if="raceDayForecast" class="race-forecast">
+				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
+				<p>Race Day Condition: {{ raceDayForecast.weather[0].description }}</p>
+				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
+			</div>
+			<div v-else-if="isRaceDay">
+				<p class="forecast-unavailable">
+					Race day forecast is not available yet.
+				</p>
+			</div>
 		</div>
-		<div v-else-if="track.isNext && !raceDayForecast">
-			<p>Race day forecast not available yet.</p>
+		<div v-else>
+			<p>Loading weather...</p>
 		</div>
 	</div>
-	<div v-else>
-		<p>Loading weather data...</p>
-	</div> -->
 </template>
 
 <style scoped>

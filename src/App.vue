@@ -76,7 +76,7 @@
 		});
 	});
 
-	console.log("TrackData: ", TrackData.value);
+	// console.log("TrackData: ", TrackData.value);
 
 	//Keeps trackIndex in sync with the Swiper component.
 	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
@@ -99,10 +99,16 @@
 		@slideChange="onSlideChange"
 		class="full-screen-swiper"
 	>
-		<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
-			<TrackWeather />
+		<SwiperSlide v-for="(track, index) in TrackData" :key="index">
+			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>
+
+	<!-- TODO Do something about the case when there no races to load -->
+
+	<!-- <div class="loading-content" v-else>
+		<p>Loading weather data...</p>
+	</div> -->
 </template>
 
 <style scoped>
