@@ -1,81 +1,13 @@
 <script setup>
-	const weatherCache = {};
-	import { ref, onMounted, computed, watch } from "vue";
+	import { computed } from "vue";
 
-	const weatherData = ref(null);
-	const raceDayForecast = ref(null);
-
-	const props = defineProps(["track"]);
-
-	const now = new Date();
-	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-	const isRaceDay = computed(() => {
-		const raceDate = new Date(props.track.date);
-		const raceDay = new Date(
-			raceDate.getFullYear(),
-			raceDate.getMonth(),
-			raceDate.getDate()
-		);
-		return raceDay.getTime() === today.getTime();
+	const { track } = defineProps({
+		track: Object,
 	});
 
-	const fetchWeather = async () => {
-		const { lat, long } = props.track.location;
-		const cacheKey = `${lat},${long}`;
-
-		if (weatherCache[cacheKey]) {
-			weatherData.value = weatherCache[cacheKey].weather;
-			raceDayForecast.value = weatherCache[cacheKey].forecast;
-			return;
-		}
-
-		try {
-			const res = await fetch(
-				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
-					import.meta.env.VITE_WEATHER_API_KEY
-				}&units=metric`
-			);
-
-			const data = await res.json();
-			weatherData.value = data;
-
-			let forecast = null;
-			if (props.track.isNext && data.daily) {
-				const raceDate = new Date(props.track.date);
-
-				forecast =
-					data.daily.find((day) => {
-						const forecastDate = new Date(day.dt * 1000);
-						return (
-							forecastDate.getUTCFullYear() === raceDate.getUTCFullYear() &&
-							forecastDate.getUTCMonth() === raceDate.getUTCMonth() &&
-							forecastDate.getUTCDate() === raceDate.getUTCDate()
-						);
-					}) || null;
-			}
-
-			raceDayForecast.value = forecast;
-
-			weatherCache[cacheKey] = {
-				weather: data,
-				forecast,
-			};
-		} catch (err) {
-			console.error("❌ Fetch error:", err);
-			weatherData.value = null;
-			raceDayForecast.value = null;
-		}
-	};
-
-	onMounted(() => {
-		fetchWeather();
-	});
-
-	watch(() => props.track, fetchWeather, { immediate: true });
-
+	// UV Index
 	const uvLevel = computed(() => {
-		const uvi = weatherData.value?.current?.uvi;
+		const uvi = track.weather?.current?.uvi;
 
 		if (uvi === undefined || uvi === null) return null;
 
@@ -88,11 +20,71 @@
 
 		return { label: "Extreme", color: "purple", textColor: "white" };
 	});
+
+	// Is it Race Day?
+	const isRaceDay = computed(() => {
+		const today = new Date();
+		const todayDateOnly = new Date(
+			today.getFullYear(),
+			today.getMonth(),
+			today.getDate()
+		);
+
+		const raceDate = new Date(track.date);
+		const raceDateOnly = new Date(
+			raceDate.getFullYear(),
+			raceDate.getMonth(),
+			raceDate.getDate()
+		);
+
+		return raceDateOnly.getTime() === todayDateOnly.getTime();
+	});
+
+	// Race Day Forecast
+	const raceDayForecast = computed(() => {
+		// if (!isRaceDay.value) return null;
+
+		const forecastArray = track.weather?.daily;
+		if (!forecastArray) return null;
+
+		const raceDate = new Date(track.date);
+
+		// Find the forecast for the race day
+		const match = forecastArray.find((day) => {
+			const forecastDate = new Date(day.dt * 1000);
+			return (
+				forecastDate.getUTCFullYear() === raceDate.getUTCFullYear() &&
+				forecastDate.getUTCMonth() === raceDate.getUTCMonth() &&
+				forecastDate.getUTCDate() === raceDate.getUTCDate()
+			);
+		});
+
+		return match || null;
+	});
+
+	// Icons for the weather conditions described in the API response.
+	const getWeatherIcon = (desc) => {
+		const d = desc.toLowerCase();
+		if (d.includes("clear")) return "☀️";
+		if (d.includes("cloud")) return "☁️";
+		if (d.includes("rain")) return "🌧️";
+		if (d.includes("storm")) return "⛈️";
+		if (d.includes("snow")) return "❄️";
+		return "🌡️";
+	};
 </script>
+
 <template>
-	<div class="track-card" v-if="weatherData && weatherData.current && uvLevel">
+	<div class="track-card">
 		<div class="track-title-uv">
+			<div v-if="isRaceDay">
+				<p class="nextRace-text">Race Day</p>
+			</div>
+			<div v-else-if="track.isNext">
+				<p class="nextRace-text">Up Next</p>
+			</div>
 			<p
+				v-if="uvLevel"
 				class="uv-badge"
 				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
 			>
@@ -101,25 +93,11 @@
 					{{ uvLevel.label }}
 				</span>
 			</p>
-			<div v-if="isRaceDay">
-				<p class="nextRace-text">Race Day</p>
-			</div>
-			<div v-else-if="track.isNext">
-				<p class="nextRace-text">Up Next</p>
-			</div>
+
 			<h2>{{ track.raceName }}</h2>
 		</div>
 		<p>{{ track.circuitName }}</p>
-		<p>
-			{{
-				new Date(track.date).toLocaleDateString("en-US", {
-					weekday: "long",
-					year: "numeric",
-					month: "short",
-					day: "numeric",
-				})
-			}}
-		</p>
+		<p>{{ track.date }}</p>
 		<p>{{ track.country }}</p>
 		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
 		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
@@ -133,14 +111,9 @@
 				{{ raceDayForecast.weather[0].description }}
 			</p>
 		</div>
-		<div v-else-if="track.isNext && !raceDayForecast">
-			<p>Race day forecast not available yet.</p>
+		<div v-else>
+			<p>Loading weather...</p>
 		</div>
-	</div>
-	<div v-else>
-		<!-- TODO Loading Animation and maybe a message after a certain amout of time (it will run to this branch of I have no more free API calls) Badsh*t crazy idea https://codepen.io/tholman/pen/AvWXMr -->
-
-		<p>Loading weather data...</p>
 	</div>
 </template>
 
