@@ -96,7 +96,16 @@
 
 			<h2>{{ track.raceName }}</h2>
 		</div>
-		<h2>{{ track.date }}</h2>
+		<h2>
+			{{
+				new Date(track.date).toLocaleDateString("en-US", {
+					weekday: "long",
+					year: "numeric",
+					month: "short",
+					day: "numeric",
+				})
+			}}
+		</h2>
 		<p>{{ track.circuitName }}, {{ track.country }}</p>
 		<div v-if="track.weather">
 			<p>Current temperature: {{ Math.round(track.weather.current.temp) }}°C</p>
