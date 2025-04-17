@@ -96,20 +96,27 @@
 
 			<h2>{{ track.raceName }}</h2>
 		</div>
-		<p>{{ track.circuitName }}</p>
-		<p>{{ track.date }}</p>
-		<p>{{ track.country }}</p>
-		<p>Current Temp: {{ Math.round(weatherData.current.temp) }} °C</p>
-		<p>Current Condition: {{ weatherData.current.weather[0].description }}</p>
-		<br />
-		<div v-if="track.isNext && raceDayForecast">
+		<h2>{{ track.date }}</h2>
+		<p>{{ track.circuitName }}, {{ track.country }}</p>
+		<div v-if="track.weather">
+			<p>Current temperature: {{ Math.round(track.weather.current.temp) }}°C</p>
 			<p>
-				Race Day Forecast Temp: {{ Math.round(raceDayForecast.temp.day) }} °C
+				Current Condition:
+				{{ track.weather.current.weather[0].description }}
+				{{ getWeatherIcon(track.weather.current.weather[0].description) }}
 			</p>
-			<p>
-				Race Day Forecast Condition:
-				{{ raceDayForecast.weather[0].description }}
-			</p>
+			<br />
+			<div v-if="raceDayForecast" class="race-forecast">
+				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
+				Race Day Condition: {{ raceDayForecast.weather[0].description }}
+				{{ getWeatherIcon(raceDayForecast.weather[0].description) }}
+				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
+			</div>
+			<div v-else-if="isRaceDay">
+				<p class="forecast-unavailable">
+					Race day forecast is not available yet.
+				</p>
+			</div>
 		</div>
 		<div v-else>
 			<p>Loading weather...</p>
