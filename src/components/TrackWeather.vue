@@ -63,14 +63,30 @@
 	});
 
 	// Icons for the weather conditions described in the API response.
+	// const getWeatherIcon = (desc) => {
+	// 	const d = desc.toLowerCase();
+	// 	if (d.includes("clear")) return "☀️";
+	// 	if (d.includes("cloud")) return "☁️";
+	// 	if (d.includes("rain")) return "🌧️";
+	// 	if (d.includes("storm")) return "⛈️";
+	// 	if (d.includes("snow")) return "❄️";
+	// 	return "🌡️";
+	// };
+
 	const getWeatherIcon = (desc) => {
+		if (!desc) return "smog"; // fallback icon
+
 		const d = desc.toLowerCase();
-		if (d.includes("clear")) return "☀️";
-		if (d.includes("cloud")) return "☁️";
-		if (d.includes("rain")) return "🌧️";
-		if (d.includes("storm")) return "⛈️";
-		if (d.includes("snow")) return "❄️";
-		return "🌡️";
+
+		if (d.includes("clear")) return "sun";
+		if (d.includes("cloud")) return "cloud";
+		if (d.includes("rain")) return "cloud-rain";
+		if (d.includes("storm") || d.includes("thunder")) return "bolt";
+		if (d.includes("snow")) return "snowflake";
+		if (d.includes("fog") || d.includes("mist") || d.includes("haze"))
+			return "smog";
+
+		return "smog"; // fallback
 	};
 </script>
 
@@ -112,13 +128,22 @@
 			<p>
 				Current Condition:
 				{{ track.weather.current.weather[0].description }}
-				{{ getWeatherIcon(track.weather.current.weather[0].description) }}
+				<font-awesome-icon
+					:icon="['fas', getWeatherIcon(track?.weather?.[0]?.description)]"
+					class="weather-icon"
+				/>
 			</p>
 			<br />
 			<div v-if="raceDayForecast" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
 				Race Day Condition: {{ raceDayForecast.weather[0].description }}
-				{{ getWeatherIcon(raceDayForecast.weather[0].description) }}
+				<font-awesome-icon
+					:icon="[
+						'fas',
+						getWeatherIcon(raceDayForecast?.weather?.[0]?.description),
+					]"
+					class="weather-icon"
+				/>
 				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
 			</div>
 			<div v-else-if="isRaceDay">
