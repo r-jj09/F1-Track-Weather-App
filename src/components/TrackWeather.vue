@@ -61,6 +61,17 @@
 
 		return match || null;
 	});
+
+	// Icons for the weather conditions described in the API response.
+	const getWeatherIcon = (desc) => {
+		const d = desc.toLowerCase();
+		if (d.includes("clear")) return "☀️";
+		if (d.includes("cloud")) return "☁️";
+		if (d.includes("rain")) return "🌧️";
+		if (d.includes("storm")) return "⛈️";
+		if (d.includes("snow")) return "❄️";
+		return "🌡️";
+	};
 </script>
 
 <template>
@@ -90,12 +101,15 @@
 		<div v-if="track.weather">
 			<p>Current temperature: {{ Math.round(track.weather.current.temp) }}°C</p>
 			<p>
-				Current Condition: {{ track.weather.current.weather[0].description }}
+				Current Condition:
+				{{ track.weather.current.weather[0].description }}
+				{{ getWeatherIcon(track.weather.current.weather[0].description) }}
 			</p>
 			<br />
 			<div v-if="raceDayForecast" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
-				<p>Race Day Condition: {{ raceDayForecast.weather[0].description }}</p>
+				Race Day Condition: {{ raceDayForecast.weather[0].description }}
+				{{ getWeatherIcon(raceDayForecast.weather[0].description) }}
 				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
 			</div>
 			<div v-else-if="isRaceDay">
