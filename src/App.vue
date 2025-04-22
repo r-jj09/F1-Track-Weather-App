@@ -93,6 +93,7 @@
 
 <template>
 	<Swiper
+		v-if="isLoading === false && TrackData"
 		:slides-per-view="1"
 		:initial-slide="nextRaceIndex"
 		:space-between="0"
@@ -104,8 +105,6 @@
 			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>
-
-	<!-- TODO Do something about the case when there no races to load -->
 
 	<div class="preloader" style="opacity: 1" v-if="isLoading">
 		<svg

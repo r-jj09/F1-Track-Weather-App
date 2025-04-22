@@ -1,5 +1,6 @@
 <script setup>
-	import { computed } from "vue";
+	import { computed, watch, onMounted } from "vue";
+	import { Skycons } from "skycons-ts";
 
 	const { track } = defineProps({
 		track: Object,
@@ -62,32 +63,42 @@
 		return match || null;
 	});
 
-	// Icons for the weather conditions described in the API response.
-	// const getWeatherIcon = (desc) => {
-	// 	const d = desc.toLowerCase();
-	// 	if (d.includes("clear")) return "☀️";
-	// 	if (d.includes("cloud")) return "☁️";
-	// 	if (d.includes("rain")) return "🌧️";
-	// 	if (d.includes("storm")) return "⛈️";
-	// 	if (d.includes("snow")) return "❄️";
-	// 	return "🌡️";
-	// };
+	const iconId = `skycon-${track.raceName.replace(/\s+/g, "-").toLowerCase()}`;
 
-	const getWeatherIcon = (desc) => {
-		if (!desc) return "smog"; // fallback icon
+	// Helper function to get the matching icon
+	const getSkyconType = (desc) => {
+		if (!desc || typeof desc !== "string") return "partly-cloudy-day";
 
 		const d = desc.toLowerCase();
-
-		if (d.includes("clear")) return "sun";
-		if (d.includes("cloud")) return "cloud";
-		if (d.includes("rain")) return "cloud-rain";
-		if (d.includes("storm") || d.includes("thunder")) return "bolt";
-		if (d.includes("snow")) return "snowflake";
+		if (d.includes("clear")) return "clear-day";
+		if (d.includes("cloud")) return "cloudy";
+		if (d.includes("rain")) return "rain";
+		if (d.includes("storm") || d.includes("thunder")) return "sleet";
+		if (d.includes("snow")) return "snow";
 		if (d.includes("fog") || d.includes("mist") || d.includes("haze"))
-			return "smog";
+			return "fog";
 
-		return "smog"; // fallback
+		return "partly-cloudy-day"; // safe fallback
 	};
+
+	onMounted(() => {
+		const desc = track.weather?.current?.weather?.[0]?.description;
+		const icon = getSkyconType(desc);
+
+		const skycons = new Skycons({ color: "white" });
+		skycons.add(iconId, icon); // ✅ just pass the string directly
+		skycons.play();
+	});
+
+	watch(
+		() => track.weather?.current?.weather?.[0]?.description,
+		(newDesc) => {
+			const icon = getSkyconType(newDesc);
+
+			const skycons = new Skycons({ color: "white" });
+			skycons.set(iconId, icon);
+		}
+	);
 </script>
 
 <template>
@@ -110,9 +121,9 @@
 				</span>
 			</p>
 
-			<h2>{{ track.raceName }}</h2>
+			<h2 class="italic-text">{{ track.raceName }}</h2>
 		</div>
-		<h2>
+		<h2 class="italic-text">
 			{{
 				new Date(track.date).toLocaleDateString("en-US", {
 					weekday: "long",
@@ -122,16 +133,27 @@
 				})
 			}}
 		</h2>
-		<p>{{ track.circuitName }}, {{ track.country }}</p>
-		<div v-if="track.weather">
-			<p>Current temperature: {{ Math.round(track.weather.current.temp) }}°C</p>
-			<p>
-				Current Condition:
-				{{ track.weather.current.weather[0].description }}
-				<font-awesome-icon
-					:icon="['fas', getWeatherIcon(track?.weather?.[0]?.description)]"
+		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
+		<div v-if="track.weather && !isRaceDay">
+			<p style="font-size: 29px; color: white">
+				{{ Math.round(track.weather.current.temp) }}°C
+			</p>
+			<div style="display: flex; align-items: center; justify-content: center">
+				<p style="color: white">
+					{{ track.weather.current.weather[0].description }}
+				</p>
+				<canvas
 					class="weather-icon"
-				/>
+					:id="iconId"
+					width="70"
+					height="70"
+				></canvas>
+			</div>
+			<p style="color: white">
+				Humidity: {{ track.weather.current.humidity }}%
+			</p>
+			<p v-if="track.weather.current.rain">
+				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
 			<br />
 			<div v-if="raceDayForecast" class="race-forecast">
@@ -165,10 +187,10 @@
 		justify-content: center;
 		align-items: center;
 		min-height: 50vh;
-		background-color: #14a5a5;
+		background-color: #14a5a570;
 		border-radius: 8px;
 		padding: 20px;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 0 8px 5px rgba(0, 0, 0, 0.1);
 		text-align: center;
 		width: 80%;
 		margin: auto;
@@ -205,38 +227,11 @@
 		color: #860303;
 	}
 
-	/* Loading */
-
-	.loader {
-		width: 44.8px;
-		height: 44.8px;
-		position: relative;
-		transform: rotate(45deg);
+	.italic-text {
+		font-style: italic;
 	}
 
-	.loader:before,
-	.loader:after {
-		content: "";
-		position: absolute;
-		inset: 0;
-		border-radius: 50% 50% 0 50%;
-		background: #0000;
-		background-image: radial-gradient(
-			circle 11.2px at 50% 50%,
-			#0000 94%,
-			#ff4747
-		);
-	}
-
-	.loader:after {
-		animation: pulse-ytk0dhmd 1s infinite;
-		transform: perspective(336px) translateZ(0px);
-	}
-
-	@keyframes pulse-ytk0dhmd {
-		to {
-			transform: perspective(336px) translateZ(168px);
-			opacity: 0;
-		}
+	.weather-icon {
+		display: flex;
 	}
 </style>
