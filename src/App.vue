@@ -1,21 +1,22 @@
 <script setup>
-	import { ref, onMounted, computed, watch } from "vue";
+	import { ref, onMounted, computed } from "vue";
 	import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
 	import "swiper/css/pagination";
 	import "swiper/css/navigation";
-	import tracks from "@/data/tracks.json"; // Track data
+	import { Pagination, Navigation } from "swiper/modules";
+	import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
+
+	const modules = [Pagination, Navigation]; // ✅ Declare here!
 
 	const isLoading = ref(true);
 
-	//Get the current date and time (with hours and minutes)
+	// Get the current date and time
 	const now = new Date();
-
-	//Use 'now' to get the current date (without hours and minutes)
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-	//Based on the 'tracks' array's 'date' and 'today' identify witch race is next and index it
+	// Find next race
 	const nextRaceIndex = tracks.findIndex((track) => {
 		const raceDate = new Date(track.date);
 		const raceDay = new Date(
@@ -26,17 +27,10 @@
 		return raceDay >= today;
 	});
 
-	// Maps through the tracks and adds an 'isNext' property to each track object.
-	// The 'isNext' property is true for the track that corresponds to the next race (based on the nextRaceIndex).
-	// This property is used in the template to visually indicate the next race.
 	const tracksWithNextIndicator = tracks.map((track, index) => ({
 		...track,
 		isNext: index === nextRaceIndex,
 	}));
-
-	//Okay this one gives back a array with all the races with all the data (circuitName, date, location, etc.) AND with the isNext boolean property.
-	// console.log(tracksWithNextIndicator);
-	// console.log(track.raceName, track.location);
 
 	const weatherData = ref({});
 
@@ -53,8 +47,6 @@
 					}&units=metric`
 				);
 				const data = await res.json();
-
-				// Use race name or create a slug for better readability
 				const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
 				results[key] = data;
 			} catch (error) {
@@ -78,9 +70,7 @@
 		});
 	});
 
-	//Keeps trackIndex in sync with the Swiper component.
 	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
-
 	const onSlideChange = (swiper) => {
 		trackIndex.value = swiper.realIndex;
 	};
@@ -93,12 +83,17 @@
 
 <template>
 	<Swiper
-		v-if="isLoading === false && TrackData"
+		v-if="isLoading == false"
+		:modules="modules"
 		:slides-per-view="1"
 		:initial-slide="nextRaceIndex"
 		:space-between="0"
 		:grab-cursor="true"
 		@slideChange="onSlideChange"
+		:pagination="{
+			type: 'fraction',
+		}"
+		:navigation="true"
 		class="full-screen-swiper"
 	>
 		<SwiperSlide v-for="(track, index) in TrackData" :key="index">
@@ -106,7 +101,9 @@
 		</SwiperSlide>
 	</Swiper>
 
-	<div class="preloader" style="opacity: 1" v-if="isLoading">
+	<!-- ! Loading Animation by https://codepen.io/tholman/pen/AvWXMr -->
+
+	<div v-if="isLoading" class="preloader" style="opacity: 1">
 		<svg
 			version="1.1"
 			id="sun"
@@ -224,5 +221,10 @@
 		align-items: center;
 		justify-content: center;
 		background-color: #f0f0f0;
+	}
+
+	.swiper-button-next,
+	.swiper-button-prev {
+		color: #860303 !important;
 	}
 </style>

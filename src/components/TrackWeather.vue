@@ -86,7 +86,7 @@
 		const icon = getSkyconType(desc);
 
 		const skycons = new Skycons({ color: "white" });
-		skycons.add(iconId, icon); // ✅ just pass the string directly
+		skycons.add(iconId, icon);
 		skycons.play();
 	});
 
