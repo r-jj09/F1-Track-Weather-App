@@ -230,7 +230,7 @@
 <style>
 	.full-screen-swiper {
 		width: 100%;
-		height: 100vw;
+		height: 100vh;
 	}
 
 	body,
