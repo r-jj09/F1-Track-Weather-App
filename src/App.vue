@@ -79,6 +79,18 @@
 		await fetchAllWeather();
 		isLoading.value = false;
 	});
+
+	const isMobileDevice = ref(false);
+
+	onMounted(() => {
+		const ua = navigator.userAgent || navigator.vendor || window.opera;
+		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
+	});
+
+	const pagination = computed(() => ({
+		type: isMobileDevice.value ? "fraction" : "progressbar",
+		clickable: true,
+	}));
 </script>
 
 <template>
@@ -90,9 +102,7 @@
 		:space-between="0"
 		:grab-cursor="true"
 		@slideChange="onSlideChange"
-		:pagination="{
-			type: 'fraction',
-		}"
+		:pagination="pagination"
 		:navigation="true"
 		class="full-screen-swiper"
 	>
@@ -210,7 +220,7 @@
 	</div>
 </template>
 
-<style scoped>
+<style>
 	.full-screen-swiper {
 		width: 100%;
 		height: 100vh;
