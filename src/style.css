@@ -8,3 +8,9 @@
     font-weight: 700;
     font-style: normal;
 }
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #14a5a570;
+}

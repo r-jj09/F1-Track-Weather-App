@@ -91,6 +91,13 @@
 		type: isMobileDevice.value ? "fraction" : "progressbar",
 		clickable: true,
 	}));
+
+	const carPosition = computed(() => {
+		const totalSlides = TrackData.value.length;
+		if (totalSlides <= 1) return 0;
+
+		return (trackIndex.value / (totalSlides - 1)) * 100;
+	});
 </script>
 
 <template>
@@ -223,18 +230,47 @@
 <style>
 	.full-screen-swiper {
 		width: 100%;
-		height: 100vh;
+		height: 100vw;
+	}
+
+	body,
+	.swiper-slide {
+		background-color: #14a5a570;
 	}
 
 	.swiper-slide {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background-color: #f0f0f0;
 	}
 
 	.swiper-button-next,
 	.swiper-button-prev {
 		color: #860303 !important;
+	}
+
+	.swiper-pagination-horizontal {
+		height: 8px !important;
+	}
+
+	.swiper-pagination-progressbar-fill {
+		position: relative;
+		background-color: #860303 !important;
+		border-radius: 8px;
+		transition: all 0.3s ease-in-out;
+		overflow: visible; /* needed for the car to show outside if needed */
+	}
+
+	.swiper-pagination-progressbar-fill::after {
+		content: "";
+		background-image: url("https://cdn-icons-png.flaticon.com/512/1160/1160661.png"); /* TODO Race Car SVG */
+		display: block;
+		position: absolute;
+		background-repeat: no-repeat;
+		width: 100%;
+		height: 100%;
+		right: -10px; /* sits just ahead of the fill */
+		transition: right 0.3s ease-in-out;
+		pointer-events: none;
 	}
 </style>

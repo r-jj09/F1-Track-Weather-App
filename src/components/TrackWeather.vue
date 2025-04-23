@@ -85,7 +85,7 @@
 		const desc = track.weather?.current?.weather?.[0]?.description;
 		const icon = getSkyconType(desc);
 
-		const skycons = new Skycons({ color: "white" });
+		const skycons = new Skycons({ color: "black" });
 		skycons.add(iconId, icon);
 		skycons.play();
 	});
@@ -135,11 +135,11 @@
 		</h2>
 		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
 		<div v-if="track.weather && !isRaceDay">
-			<p style="font-size: 29px; color: white">
+			<p style="font-size: 29px">
 				{{ Math.round(track.weather.current.temp) }}°C
 			</p>
 			<div style="display: flex; align-items: center; justify-content: center">
-				<p style="color: white">
+				<p>
 					{{ track.weather.current.weather[0].description }}
 				</p>
 				<canvas
@@ -149,9 +149,7 @@
 					height="70"
 				></canvas>
 			</div>
-			<p style="color: white">
-				Humidity: {{ track.weather.current.humidity }}%
-			</p>
+			<p>Humidity: {{ track.weather.current.humidity }}%</p>
 			<p v-if="track.weather.current.rain">
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
@@ -187,7 +185,7 @@
 		justify-content: center;
 		align-items: center;
 		min-height: 50vh;
-		background-color: #14a5a570;
+		background-color: #ffffffb7;
 		border-radius: 8px;
 		padding: 20px;
 		box-shadow: 0 0 8px 5px rgba(0, 0, 0, 0.1);
