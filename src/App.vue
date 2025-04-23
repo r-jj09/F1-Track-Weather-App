@@ -255,8 +255,16 @@
 
 	.swiper-pagination-progressbar-fill {
 		position: relative;
-		background-color: #860303 !important;
-		border-radius: 8px;
+		/* background-color: #860303 !important; */
+		background-image: repeating-linear-gradient(
+			90deg,
+			black 0,
+			black 8px,
+			white 8px,
+			white 16px
+		);
+		background-size: auto 100%;
+		border-radius: 20px;
 		transition: all 0.3s ease-in-out;
 		overflow: visible; /* needed for the car to show outside if needed */
 	}
