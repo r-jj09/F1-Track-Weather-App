@@ -91,13 +91,6 @@
 		type: isMobileDevice.value ? "fraction" : "progressbar",
 		clickable: true,
 	}));
-
-	const carPosition = computed(() => {
-		const totalSlides = TrackData.value.length;
-		if (totalSlides <= 1) return 0;
-
-		return (trackIndex.value / (totalSlides - 1)) * 100;
-	});
 </script>
 
 <template>
@@ -256,39 +249,30 @@
 			linear-gradient(45deg, transparent 75%, #000 75%),
 			linear-gradient(45deg, transparent 75%, #000 75%),
 			linear-gradient(45deg, #000 25%, #fff 25%);
+		mask: linear-gradient(to right, black 100%) !important;
+		-webkit-mask: linear-gradient(to right, black 100%) !important;
 		background-size: 20px 20px !important;
 		background-position: 0 0, 0 0, -50px -50px, 50px 50px !important;
 	}
 
-	.swiper-pagination-horizontal::after {
-		content: "";
-		display: block;
-		position: absolute;
-		top: 0;
-		left: 0;
-		background-color: #860303;
-		width: 100%;
-		height: 100%;
-	}
-
 	.swiper-pagination-progressbar-fill {
-		position: relative;
-		background-color: #ffffff00 !important;
-		border-radius: 20px;
+		height: 100%;
+		background-color: blue !important;
+		z-index: 10;
 		transition: all 0.3s ease-in-out;
 		overflow: visible; /* needed for the car to show outside if needed */
 	}
 
-	.swiper-pagination-progressbar-fill::after {
+	/* .swiper-pagination-progressbar-fill::after {
 		content: "";
-		background-image: url("https://cdn-icons-png.flaticon.com/512/1160/1160661.png"); /* TODO Race Car SVG */
+		background-image: url("https://cdn-icons-png.flaticon.com/512/1160/1160661.png");
 		display: block;
 		position: absolute;
 		background-repeat: no-repeat;
 		width: 100%;
 		height: 100%;
-		right: -10px; /* sits just ahead of the fill */
+		right: -10px;
 		transition: right 0.3s ease-in-out;
 		pointer-events: none;
-	}
+	} */
 </style>
