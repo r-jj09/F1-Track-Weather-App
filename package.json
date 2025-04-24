@@ -16,7 +16,8 @@
     "@vercel/speed-insights": "^1.2.0",
     "skycons-ts": "^1.0.0",
     "swiper": "^11.2.6",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
