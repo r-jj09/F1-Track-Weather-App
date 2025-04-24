@@ -263,16 +263,17 @@
 		overflow: visible; /* needed for the car to show outside if needed */
 	}
 
-	/* .swiper-pagination-progressbar-fill::after {
+	.swiper-pagination-progressbar-fill::after {
 		content: "";
-		background-image: url("https://cdn-icons-png.flaticon.com/512/1160/1160661.png");
-		display: block;
 		position: absolute;
+		top: -14px;
+		right: 0;
+		width: 24px;
+		height: 24px;
+		background-image: url("/public/racecar.svg");
+		background-size: contain;
 		background-repeat: no-repeat;
-		width: 100%;
-		height: 100%;
-		right: -10px;
-		transition: right 0.3s ease-in-out;
+		transform: translateX(50%);
 		pointer-events: none;
-	} */
+	}
 </style>
