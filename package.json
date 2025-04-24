@@ -13,6 +13,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@vercel/speed-insights": "^1.2.0",
     "skycons-ts": "^1.0.0",
     "swiper": "^11.2.6",
     "vue": "^3.5.13"

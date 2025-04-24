@@ -7,6 +7,7 @@
 	import { Pagination, Navigation } from "swiper/modules";
 	import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
+	import { SpeedInsights } from "@vercel/speed-insights/vue";
 
 	const modules = [Pagination, Navigation]; // ✅ Declare here!
 
@@ -218,6 +219,7 @@
 
 		<div class="text">LOOKING OUTSIDE FOR YOU... ONE SEC</div>
 	</div>
+	<SpeedInsights />
 </template>
 
 <style>
