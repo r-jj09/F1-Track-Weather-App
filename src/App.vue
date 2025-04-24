@@ -244,7 +244,7 @@
 		color: #860303 !important;
 	}
 
-	.swiper-pagination-horizontal {
+	.swiper-pagination-progressbar {
 		top: 8px !important;
 		height: 20px !important;
 		background-image: linear-gradient(45deg, #000 25%, transparent 25%),
