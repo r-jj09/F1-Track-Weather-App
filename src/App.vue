@@ -250,20 +250,19 @@
 	}
 
 	.swiper-pagination-horizontal {
+		top: 8px !important;
 		height: 8px !important;
 	}
 
 	.swiper-pagination-progressbar-fill {
 		position: relative;
 		/* background-color: #860303 !important; */
-		background-image: repeating-linear-gradient(
-			90deg,
-			black 0,
-			black 8px,
-			white 8px,
-			white 16px
-		);
-		background-size: auto 100%;
+		background-image: linear-gradient(45deg, #000 25%, transparent 25%),
+			linear-gradient(45deg, transparent 75%, #000 75%),
+			linear-gradient(45deg, transparent 75%, #000 75%),
+			linear-gradient(45deg, #000 25%, #fff 25%) !important;
+		background-size: 100px 100px !important;
+		background-position: 0 0, 0 0, -50px -50px, 50px 50px !important;
 		border-radius: 20px;
 		transition: all 0.3s ease-in-out;
 		overflow: visible; /* needed for the car to show outside if needed */
