@@ -95,7 +95,7 @@
 
 <template>
 	<Swiper
-		v-if="isLoading === false"
+		v-if="isLoading === false && TrackData.length > 0"
 		:modules="modules"
 		:slides-per-view="1"
 		:initial-slide="nextRaceIndex"
