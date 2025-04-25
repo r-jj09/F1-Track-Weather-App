@@ -146,7 +146,11 @@
 
 	<!-- ! Loading Animation by https://codepen.io/tholman/pen/AvWXMr -->
 
-	<div v-if="isLoading" class="preloader" style="opacity: 1">
+	<div
+		v-if="isLoading || TrackData.value.weather === null"
+		class="preloader"
+		style="opacity: 1"
+	>
 		<svg
 			version="1.1"
 			id="sun"
