@@ -294,8 +294,8 @@
 
 	.swiper-button-next,
 	.swiper-button-prev {
-		/* color: #860303 !important; */
-		color: var(--team-color) !important;
+		color: #860303 !important;
+		/* color: var(--team-color) !important; */
 	}
 
 	.swiper-pagination-progressbar {
@@ -320,7 +320,7 @@
 	}
 
 	.swiper-pagination-fraction {
-		color: var(--team-color) !important;
+		/* color: var(--team-color) !important; */
 	}
 
 	.swiper-pagination-progressbar-fill::after {

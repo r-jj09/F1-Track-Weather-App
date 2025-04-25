@@ -184,7 +184,7 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		min-height: 50vh;
+		min-height: 70%;
 		background-color: #ffffffb7;
 		border-radius: 8px;
 		padding: 20px;
@@ -192,15 +192,6 @@
 		text-align: center;
 		width: 80%;
 		margin: auto;
-	}
-
-	.uv-badge:before {
-		content: "";
-		display: absolute;
-		width: 100%;
-		height: 2px;
-		background-image: url("/public/uv-index-svgrepo-com.svg");
-		margin-bottom: 10px;
 	}
 
 	.track-title-uv {
@@ -223,6 +214,7 @@
 		text-transform: uppercase;
 		font-size: 25px;
 		color: #860303;
+		font-weight: 700;
 	}
 
 	.italic-text {
