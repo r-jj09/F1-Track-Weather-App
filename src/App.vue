@@ -8,6 +8,8 @@
 	import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
 
+	const hasValidWeather = ref(false);
+
 	const modules = [Pagination, Navigation]; // ✅ Declare here!
 
 	const isLoading = ref(true);
@@ -48,13 +50,24 @@
 				);
 				const data = await res.json();
 				const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
-				results[key] = data;
+
+				if (data.current) {
+					results[key] = data;
+				} else {
+					console.warn(`Invalid weather data for ${track.raceName}:`, data);
+					results[key] = null;
+				}
 			} catch (error) {
 				console.error(`Failed to fetch weather for ${track.raceName}:`, error);
+				results[key] = null;
 			}
 		}
 
 		weatherData.value = results;
+		hasValidWeather.value = Object.values(results).some(
+			(data) => data && data.current
+		);
+		isLoading.value = false;
 	};
 
 	const createWeatherKey = (raceName) =>
@@ -130,7 +143,7 @@
 
 <template>
 	<Swiper
-		v-if="!isLoading && TrackData.some((track) => track.weather)"
+		v-if="!isLoading && hasValidWeather"
 		:modules="modules"
 		:slides-per-view="1"
 		:initial-slide="nextRaceIndex"
@@ -148,7 +161,11 @@
 
 	<!-- ! Loading Animation by https://codepen.io/tholman/pen/AvWXMr -->
 
-	<div v-if="isLoading" class="preloader" style="opacity: 1">
+	<div
+		v-if="isLoading || !hasValidWeather"
+		class="preloader"
+		style="opacity: 1"
+	>
 		<svg
 			version="1.1"
 			id="sun"
