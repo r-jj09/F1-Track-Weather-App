@@ -1,5 +1,5 @@
 <script setup>
-	import { ref, onMounted, computed } from "vue";
+	import { ref, onMounted, computed, watch } from "vue";
 	import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
 	import "swiper/css/pagination";
@@ -91,11 +91,42 @@
 		type: isMobileDevice.value ? "fraction" : "progressbar",
 		clickable: true,
 	}));
+
+	const teamColors = {
+		ferrari: "#FF0000",
+		redbull: "#0000FF",
+		mercedes: "#FFFF00",
+		sauber: "#008000",
+		mclaren: "#FFA500",
+		williams: "#800080",
+		alpine: "#00FFFF",
+		haas: "#FF1493",
+		racingbulls: "#FFD700",
+		aston: "#7FFF00",
+	};
+
+	const randomTeamEntry = computed(() => {
+		const entries = Object.entries(teamColors);
+		const randomIndex = Math.floor(Math.random() * entries.length);
+		const [team, color] = entries[randomIndex];
+		return { team, color };
+	});
+
+	console.log("Random Team Entry:", randomTeamEntry.value.color);
+	console.log("Random Team Entry:", randomTeamEntry.value.team);
+
+	watch(
+		() => randomTeamEntry.value.color,
+		(newColor) => {
+			document.documentElement.style.setProperty("--team-color", newColor);
+		},
+		{ immediate: true } // set it right away on load too
+	);
 </script>
 
 <template>
 	<Swiper
-		v-if="isLoading === false && TrackData.length > 0"
+		v-if="!isLoading && TrackData.some((track) => track.weather)"
 		:modules="modules"
 		:slides-per-view="1"
 		:initial-slide="nextRaceIndex"
@@ -221,6 +252,9 @@
 </template>
 
 <style>
+	:root {
+		--team-color: #ff0000; /* Default color */
+	}
 	.full-screen-swiper {
 		width: 100%;
 		height: 100vh;
@@ -257,7 +291,7 @@
 
 	.swiper-pagination-progressbar-fill {
 		height: 100%;
-		background-color: blue !important;
+		background-color: var(--team-color) !important;
 		z-index: 10;
 		transition: all 0.3s ease-in-out;
 		overflow: visible; /* needed for the car to show outside if needed */
