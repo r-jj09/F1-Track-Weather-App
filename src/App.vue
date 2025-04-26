@@ -7,6 +7,7 @@
 	import { Pagination, Navigation } from "swiper/modules";
 	import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
+	import { nextTick } from "vue";
 
 	const hasValidWeather = ref(false);
 
@@ -91,6 +92,12 @@
 	onMounted(async () => {
 		await fetchAllWeather();
 		isLoading.value = false;
+
+		await nextTick(); // wait until Vue updates the DOM
+		const car = document.getElementById("racecar");
+		if (car) {
+			car.style.left = `${carPosition.value}%`;
+		}
 	});
 
 	const isMobileDevice = ref(false);
@@ -139,6 +146,21 @@
 	// TODO Add color to the mobile pagination too
 
 	console.log("TrackData:", TrackData.value);
+
+	const carPosition = computed(() => {
+		const totalSlides = TrackData.value.length;
+		if (totalSlides <= 1) return 0;
+		return (trackIndex.value / (totalSlides - 1)) * 100; // in %
+	});
+
+	// Update the car position manually when the trackIndex changes
+	watch(trackIndex, (newIndex) => {
+		const car = document.getElementById("racecar");
+		if (car) {
+			car.style.left = `${carPosition.value}%`;
+			car.style.left = `calc(${carPosition.value}% + 10px)`;
+		}
+	});
 </script>
 
 <template>
@@ -158,6 +180,11 @@
 			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>
+	<div
+		v-if="!isMobileDevice && !isLoading"
+		id="racecar"
+		class="racecar-marker"
+	></div>
 
 	<!-- ! Loading Animation by https://codepen.io/tholman/pen/AvWXMr -->
 
@@ -278,7 +305,7 @@
 	}
 	.full-screen-swiper {
 		width: 100%;
-		height: 100vh;
+		height: 100dvh;
 	}
 
 	body,
@@ -322,18 +349,17 @@
 	.swiper-pagination-fraction {
 		/* color: var(--team-color) !important; */
 	}
-
-	.swiper-pagination-progressbar-fill::after {
-		content: "";
+	.racecar-marker {
 		position: absolute;
-		top: -14px;
-		right: 0;
-		width: 24px;
-		height: 24px;
-		background-image: url("/public/racecar.svg");
+		top: -11px;
+		width: 60px;
+		height: 70px;
+		background-image: url(/racecar.svg);
 		background-size: contain;
 		background-repeat: no-repeat;
-		transform: translateX(50%);
+		transform: translateX(-50%);
+		transition: left 0.3s ease-in-out;
 		pointer-events: none;
+		z-index: 10;
 	}
 </style>
