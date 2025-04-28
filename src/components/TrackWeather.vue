@@ -177,7 +177,7 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		min-height: 70%;
+		height: 70%;
 		background-color: #ffffffb7;
 		border-radius: 8px;
 		padding: 20px;
