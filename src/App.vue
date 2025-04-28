@@ -154,7 +154,7 @@
 	});
 
 	// Update the car position manually when the trackIndex changes
-	watch(trackIndex, (newIndex) => {
+	watch(trackIndex, () => {
 		const car = document.getElementById("racecar");
 		if (car) {
 			car.style.left = `${carPosition.value}%`;
