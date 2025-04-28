@@ -132,8 +132,8 @@
 		return { team, color };
 	});
 
-	console.log("Random Team Entry:", randomTeamEntry.value.color);
-	console.log("Random Team Entry:", randomTeamEntry.value.team);
+	// console.log("Random Team Entry:", randomTeamEntry.value.color);
+	// console.log("Random Team Entry:", randomTeamEntry.value.team);
 
 	watch(
 		() => randomTeamEntry.value.color,
@@ -145,7 +145,7 @@
 
 	// TODO Add color to the mobile pagination too
 
-	console.log("TrackData:", TrackData.value);
+	// console.log("TrackData:", TrackData.value);
 
 	const carPosition = computed(() => {
 		const totalSlides = TrackData.value.length;

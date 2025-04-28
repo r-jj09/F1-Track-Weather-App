@@ -25,11 +25,11 @@ function updateFavicon() {
 	}
 
 	const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-	console.log("Dark mode detected:", isDark); // Debug log
+	// console.log("Dark mode detected:", isDark);
 	favicon.href = isDark
 		? `/favicon_inverted.png?${new Date().getTime()}`
 		: `/favicon.png?${new Date().getTime()}`;
-	console.log("Favicon updated to:", favicon.href); // Debug log
+	// console.log("Favicon updated to:", favicon.href);
 }
 
 // Initial check

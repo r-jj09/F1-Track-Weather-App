@@ -157,13 +157,6 @@
 			<div v-if="raceDayForecast" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
 				Race Day Condition: {{ raceDayForecast.weather[0].description }}
-				<font-awesome-icon
-					:icon="[
-						'fas',
-						getWeatherIcon(raceDayForecast?.weather?.[0]?.description),
-					]"
-					class="weather-icon"
-				/>
 				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
 			</div>
 			<div v-else-if="isRaceDay">
