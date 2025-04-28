@@ -91,6 +91,7 @@
 
 	onMounted(async () => {
 		await fetchAllWeather();
+		await nextTick(); // wait until Vue updates the DOM
 		isLoading.value = false;
 
 		await nextTick(); // wait until Vue updates the DOM
@@ -98,9 +99,33 @@
 		if (car) {
 			car.style.left = `${carPosition.value}%`;
 		}
+		updateRacecarPosition();
 	});
 
 	const isMobileDevice = ref(false);
+
+	watch(trackIndex, updateRacecarPosition);
+
+	function updateRacecarPosition() {
+		const car = document.getElementById("racecar");
+		const progressbar = document.querySelector(
+			".swiper-pagination-progressbar"
+		);
+
+		if (car && progressbar) {
+			const progressbarRect = progressbar.getBoundingClientRect();
+			const progressbarWidth = progressbarRect.width;
+
+			const carWidth = car.offsetWidth;
+			const totalSlides = TrackData.value.length;
+			const percent = trackIndex.value / (totalSlides - 1);
+
+			const left = progressbarRect.left + progressbarWidth * percent;
+
+			car.style.left = `${left}px`;
+			car.style.transform = `translate(-50%, -50%)`; // center the car better
+		}
+	}
 
 	onMounted(() => {
 		const ua = navigator.userAgent || navigator.vendor || window.opera;
@@ -146,21 +171,6 @@
 	// TODO Add color to the mobile pagination too
 
 	// console.log("TrackData:", TrackData.value);
-
-	const carPosition = computed(() => {
-		const totalSlides = TrackData.value.length;
-		if (totalSlides <= 1) return 0;
-		return (trackIndex.value / (totalSlides - 1)) * 100; // in %
-	});
-
-	// Update the car position manually when the trackIndex changes
-	watch(trackIndex, () => {
-		const car = document.getElementById("racecar");
-		if (car) {
-			car.style.left = `${carPosition.value}%`;
-			car.style.left = `calc(${carPosition.value}% + 10px)`;
-		}
-	});
 </script>
 
 <template>
