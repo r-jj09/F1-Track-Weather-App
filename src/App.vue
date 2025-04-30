@@ -348,6 +348,7 @@
 
 	.swiper-pagination-fraction {
 		/* color: var(--team-color) !important; */
+		color: #860303 !important;
 	}
 	.racecar-marker {
 		position: absolute;
