@@ -134,7 +134,7 @@
 			}}
 		</h2>
 		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
-		<div v-if="track.weather && !isRaceDay">
+		<div v-if="track.weather">
 			<p style="font-size: 29px">
 				{{ Math.round(track.weather.current.temp) }}°C
 			</p>
@@ -154,7 +154,7 @@
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
 			<br />
-			<div v-if="raceDayForecast" class="race-forecast">
+			<div v-if="raceDayForecast && !isRaceDay" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
 				Race Day Condition: {{ raceDayForecast.weather[0].description }}
 				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
