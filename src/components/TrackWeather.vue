@@ -135,6 +135,15 @@
 		</h2>
 		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
 		<div v-if="track.weather">
+			<p>
+				Current time:
+				{{
+					new Date(track.weather.current.dt * 1000).toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					})
+				}}
+			</p>
 			<p style="font-size: 29px">
 				{{ Math.round(track.weather.current.temp) }}°C
 			</p>
@@ -150,6 +159,7 @@
 				></canvas>
 			</div>
 			<p>Humidity: {{ track.weather.current.humidity }}%</p>
+			<p>Clouds: {{ track.weather.current.clouds }}%</p>
 			<p v-if="track.weather.current.rain">
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
