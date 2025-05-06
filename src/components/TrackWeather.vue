@@ -99,6 +99,12 @@
 			skycons.set(iconId, icon);
 		}
 	);
+
+	const unixUTC = track.weather.current.dt; // API's dt value (UTC)
+	console.log("Unix UTC:", unixUTC);
+	const offsetSeconds = track.weather.timezone_offset; // API's timezone_offset (e.g., UTC+2)
+	console.log("Offset Seconds:", offsetSeconds);
+	const localUnix = unixUTC + offsetSeconds;
 </script>
 
 <template>
@@ -138,7 +144,7 @@
 			<p>
 				Current time:
 				{{
-					new Date(track.weather.current.dt * 1000).toLocaleTimeString([], {
+					new Date(localUnix * 1000).toLocaleTimeString([], {
 						hour: "2-digit",
 						minute: "2-digit",
 					})
