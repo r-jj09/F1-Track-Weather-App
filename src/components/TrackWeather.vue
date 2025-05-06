@@ -168,6 +168,7 @@
 			</div>
 			<p>Humidity: {{ track.weather.current.humidity }}%</p>
 			<p>Clouds: {{ track.weather.current.clouds }}%</p>
+			<p>Wind: {{ track.weather.current.wind_speed }} metre/sec</p>
 			<p v-if="track.weather.current.rain">
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
