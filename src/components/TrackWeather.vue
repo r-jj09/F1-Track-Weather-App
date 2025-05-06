@@ -100,11 +100,18 @@
 		}
 	);
 
-	const unixUTC = track.weather.current.dt; // API's dt value (UTC)
-	console.log("Unix UTC:", unixUTC);
-	const offsetSeconds = track.weather.timezone_offset; // API's timezone_offset (e.g., UTC+2)
-	console.log("Offset Seconds:", offsetSeconds);
-	const localUnix = unixUTC + offsetSeconds;
+	const localUnix = computed(() => {
+		return track.weather.current.dt + track.weather.timezone_offset;
+	});
+
+	const formattedTime = computed(() => {
+		return new Date(localUnix.value * 1000).toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+			timeZone: "UTC",
+		});
+	});
+	console.log(formattedTime);
 </script>
 
 <template>
@@ -143,12 +150,7 @@
 		<div v-if="track.weather">
 			<p>
 				Current time:
-				{{
-					new Date(localUnix * 1000).toLocaleTimeString([], {
-						hour: "2-digit",
-						minute: "2-digit",
-					})
-				}}
+				{{ formattedTime }}
 			</p>
 			<p style="font-size: 29px">
 				{{ Math.round(track.weather.current.temp) }}°C
