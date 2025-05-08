@@ -103,7 +103,7 @@
 	const isMobileDevice = ref(false);
 
 	onMounted(() => {
-		const ua = navigator.userAgent || navigator.vendor || window.opera;
+		const ua = navigator.userAgent || window.opera;
 		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
 	});
 
@@ -113,16 +113,17 @@
 	}));
 
 	const teamColors = {
-		ferrari: "#DC0000", // Iconic Scuderia Ferrari red
-		redbull: "#1E41FF", // Dark navy-blue with a vibrant punch
-		mercedes: "#00D2BE", // Petronas turquoise
-		sauber: "#52E252", // Bright green — represents the new C44 "Kick" livery
-		mclaren: "#FF8000", // Papaya orange
-		williams: "#005AFF", // Deep Williams blue
-		alpine: "#FF87BC", // Pink BWT Alpine (common in some races)
-		haas: "#7D1A1A", // Rich maroon with a gritty race feel
-		racingbulls: "#FFFFFF", // VCARB: mostly white with navy trim
-		aston: "#00665E", // British racing green (dark green-teal)
+		ferrari: "#DC0000",
+		redbull: "#1E41FF",
+		mercedes: "#00D2BE",
+		sauber: "#52E252", //will be audi next season
+		mclaren: "#FF8000",
+		williams: "#005AFF",
+		alpine: "#FF87BC",
+		haas: "#7D1A1A",
+		racingbulls: "#FFFFFF",
+		aston: "#00665E",
+		//cadillac: somthing gold(ish)?,
 	};
 
 	const randomTeamEntry = computed(() => {
@@ -132,9 +133,6 @@
 		return { team, color };
 	});
 
-	console.log("Random Team Entry:", randomTeamEntry.value.color);
-	console.log("Random Team Entry:", randomTeamEntry.value.team);
-
 	watch(
 		() => randomTeamEntry.value.color,
 		(newColor) => {
@@ -142,10 +140,6 @@
 		},
 		{ immediate: true } // set it right away on load too
 	);
-
-	// TODO Add color to the mobile pagination too
-
-	console.log("TrackData:", TrackData.value);
 
 	const carPosition = computed(() => {
 		const totalSlides = TrackData.value.length;
@@ -157,8 +151,7 @@
 	watch(trackIndex, (newIndex) => {
 		const car = document.getElementById("racecar");
 		if (car) {
-			car.style.left = `${carPosition.value}%`;
-			car.style.left = `calc(${carPosition.value}% + 10px)`;
+			car.style.left = `calc(${carPosition.value}%`;
 		}
 	});
 </script>
