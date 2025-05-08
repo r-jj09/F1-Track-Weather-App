@@ -149,7 +149,7 @@
 		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
 		<div v-if="track.weather">
 			<p>
-				Current time:
+				Local Time:
 				{{ formattedTime }}
 			</p>
 			<p style="font-size: 29px">
