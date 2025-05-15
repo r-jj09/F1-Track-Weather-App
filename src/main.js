@@ -32,15 +32,12 @@ function updateFavicon() {
 	// console.log("Favicon updated to:", favicon.href);
 }
 
-// Initial check
 updateFavicon();
 
-// Debounced listener for color scheme changes
 const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 const onChange = () => updateFavicon();
 mediaQuery.addEventListener("change", onChange);
 
-// Optional: Cleanup listener when needed (e.g., in a SPA)
 if (import.meta.hot) {
 	import.meta.hot.dispose(() => {
 		mediaQuery.removeEventListener("change", onChange);

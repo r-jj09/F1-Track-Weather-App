@@ -11,7 +11,7 @@
 
 	const hasValidWeather = ref(false);
 
-	const modules = [Pagination, Navigation]; // ✅ Declare here!
+	const modules = [Pagination, Navigation];
 
 	const isLoading = ref(true);
 
@@ -93,7 +93,7 @@
 		await fetchAllWeather();
 		isLoading.value = false;
 
-		await nextTick(); // wait until Vue updates the DOM
+		await nextTick();
 		const car = document.getElementById("racecar");
 		if (car) {
 			car.style.left = `${carPosition.value}%`;
@@ -138,7 +138,7 @@
 		(newColor) => {
 			document.documentElement.style.setProperty("--team-color", newColor);
 		},
-		{ immediate: true } // set it right away on load too
+		{ immediate: true }
 	);
 
 	const carPosition = computed(() => {
