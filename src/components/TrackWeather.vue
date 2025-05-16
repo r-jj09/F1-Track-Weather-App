@@ -236,4 +236,30 @@
 	.weather-icon {
 		display: flex;
 	}
+
+	/* Mobile view */
+
+	@media (max-width: 768px) {
+		.track-card {
+			width: 90%;
+			padding: 10px;
+		}
+
+		.track-title-uv {
+			margin-bottom: 10px;
+		}
+
+		.nextRace-text {
+			font-size: 20px;
+		}
+
+		.italic-text {
+			font-size: 16px;
+		}
+
+		.weather-icon {
+			width: 50px;
+			height: 50px;
+		}
+	}
 </style>
