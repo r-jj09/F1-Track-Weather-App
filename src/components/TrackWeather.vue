@@ -123,10 +123,32 @@
 			<div v-else-if="track.isNext">
 				<p class="nextRace-text">Up Next</p>
 			</div>
+			<!-- UpNext texted UV Badge -->
 			<p
-				v-if="uvLevel"
+				v-if="(uvLevel && isRaceDay) || track.isNext"
 				class="uv-badge"
-				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
+				:style="{
+					backgroundColor: uvLevel.color,
+					color: uvLevel.textColor,
+					top: '-10%',
+					right: 0,
+				}"
+			>
+				<span>UV Index: </span>
+				<span :style="{ fontWeight: 'bold' }">
+					{{ uvLevel.label }}
+				</span>
+			</p>
+			<!-- No text uv badge -->
+			<p
+				v-else="uvLevel && !isRaceDay && !track.isNext"
+				class="uv-badge"
+				:style="{
+					backgroundColor: uvLevel.color,
+					color: uvLevel.textColor,
+					top: '-40%',
+					right: '-34%',
+				}"
 			>
 				<span>UV Index: </span>
 				<span :style="{ fontWeight: 'bold' }">
@@ -241,12 +263,8 @@
 
 	@media (max-width: 768px) {
 		.track-card {
-			width: 90%;
+			height: max-content;
 			padding: 10px;
-		}
-
-		.track-title-uv {
-			margin-bottom: 10px;
 		}
 
 		.nextRace-text {
