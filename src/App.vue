@@ -1,19 +1,18 @@
 <script setup>
-	import { ref, onMounted, computed, watch } from "vue";
+	import { ref, onMounted, computed, watch, nextTick } from "vue";
 	import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
 	import "swiper/css/pagination";
 	import "swiper/css/navigation";
 	import { Pagination, Navigation } from "swiper/modules";
-	// import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
-	import { nextTick } from "vue";
 
+	// State variables
 	const hasValidWeather = ref(false);
-
-	const modules = [Pagination, Navigation];
-
 	const isLoading = ref(true);
+	const raceData = ref([]); // To store race data
+	const weatherData = ref({});
+	const trackIndex = ref(0);
 
 	// Get the current year
 	const currentYear = new Date().getFullYear();
@@ -21,71 +20,37 @@
 	// Construct the API URL dynamically
 	const apiUrl = `https://api.jolpi.ca/ergast/f1/${currentYear}/races.json`;
 
-	// Get the current date and time
-	const now = new Date();
-	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	// Fetch the race data
+	const fetchRaceData = async () => {
+		try {
+			const response = await fetch(apiUrl);
+			const data = await response.json();
+			raceData.value = data.MRData.RaceTable.Races; // Update state with fetched data
 
-	const tracks = ref([]);
-
-	// Fetch the data
-	const fetchAllTrackData = async () => {
-		const response = await fetch(apiUrl);
-		if (!response.ok) {
-			throw new Error("Network response was not ok");
-		}
-		const data = await response.json();
-		// Ergast API: races are in data.MRData.RaceTable.Races
-		tracks.value = data.MRData?.RaceTable?.Races || [];
-	};
-	console.log(tracks.value);
-
-	// Find next race
-	const nextRaceIndex = computed(() => {
-		return tracks.value.findIndex((track) => {
-			const raceDate = new Date(track.date);
-			const raceDay = new Date(
-				raceDate.getFullYear(),
-				raceDate.getMonth(),
-				raceDate.getDate()
+			// Now that we have race data, calculate next race
+			const nextRaceIndex = raceData.value.findIndex(
+				(track) => new Date(track.date) >= new Date()
 			);
-			return raceDay >= today;
-		});
-	});
+			trackIndex.value = nextRaceIndex !== -1 ? nextRaceIndex : 0; // Set track index to the next race or first race
+		} catch (error) {
+			console.error("Error fetching race data:", error);
+		}
+	};
 
-	const tracksWithNextIndicator = computed(() =>
-		tracks.value.map((track, index) => ({
-			...track,
-			isNext: index === nextRaceIndex.value,
-		}))
-	);
-
-	const weatherData = ref({});
-
+	// Weather fetching function
 	const fetchAllWeather = async () => {
 		const results = {};
 
-		for (const track of tracksWithNextIndicator.value) {
-			const { lat, long } = track.location;
-
-			try {
-				const res = await fetch(
-					`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
-						import.meta.env.VITE_WEATHER_API_KEY
-					}&units=metric`
-				);
-				const data = await res.json();
-				const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
-
-				if (data.current) {
-					results[key] = data;
-				} else {
-					console.warn(`Invalid weather data for ${track.raceName}:`, data);
-					results[key] = null;
-				}
-			} catch (error) {
-				console.error(`Failed to fetch weather for ${track.raceName}:`, error);
-				results[key] = null;
-			}
+		for (const track of raceData.value) {
+			const { lat, long } = track.Circuit.Location;
+			const res = await fetch(
+				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
+					import.meta.env.VITE_WEATHER_API_KEY
+				}&units=metric`
+			);
+			const data = await res.json();
+			const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
+			results[key] = data.current ? data : null;
 		}
 
 		weatherData.value = results;
@@ -95,106 +60,48 @@
 		isLoading.value = false;
 	};
 
-	const createWeatherKey = (raceName) =>
-		raceName.toLowerCase().replace(/\s+/g, "-");
+	// Find next race
+	const nextRaceIndex = raceData.value.findIndex(
+		(track) => new Date(track.date) >= new Date()
+	);
+	trackIndex.value = nextRaceIndex !== -1 ? nextRaceIndex : 0;
 
-	const TrackData = computed(() => {
-		return tracksWithNextIndicator.value.map((track) => {
-			const key = createWeatherKey(track.raceName);
-			return {
-				...track,
-				weather: weatherData.value[key] || null,
-			};
-		});
-	});
-
-	const trackIndex = ref(nextRaceIndex !== -1 ? nextRaceIndex : 0);
-	const onSlideChange = (swiper) => {
-		trackIndex.value = swiper.realIndex;
-	};
-
-	onMounted(async () => {
-		await fetchAllWeather();
-		await fetchAllTrackData();
-		isLoading.value = false;
-
-		await nextTick();
-		const car = document.getElementById("racecar");
-		if (car) {
-			car.style.left = `${carPosition.value}%`;
-		}
-	});
-
-	const isMobileDevice = ref(false);
-
-	onMounted(() => {
-		const ua = navigator.userAgent || window.opera;
-		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
-	});
-
+	// Swiper pagination
 	const pagination = computed(() => ({
 		type: isMobileDevice.value ? "fraction" : "progressbar",
 		clickable: true,
 	}));
 
-	const teamColors = {
-		ferrari: "#DC0000",
-		redbull: "#1E41FF",
-		mercedes: "#00D2BE",
-		sauber: "#52E252", //will be audi next season
-		mclaren: "#FF8000",
-		williams: "#005AFF",
-		alpine: "#FF87BC",
-		haas: "#7D1A1A",
-		racingbulls: "#FFFFFF",
-		aston: "#00665E",
-		//cadillac: somthing gold(ish)?,
-	};
-
-	const randomTeamEntry = computed(() => {
-		const entries = Object.entries(teamColors);
-		const randomIndex = Math.floor(Math.random() * entries.length);
-		const [team, color] = entries[randomIndex];
-		return { team, color };
+	// Detect if it's a mobile device
+	const isMobileDevice = ref(false);
+	onMounted(() => {
+		const ua = navigator.userAgent || window.opera;
+		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
 	});
 
-	watch(
-		() => randomTeamEntry.value.color,
-		(newColor) => {
-			document.documentElement.style.setProperty("--team-color", newColor);
-		},
-		{ immediate: true }
-	);
+	onMounted(async () => {
+		await fetchRaceData();
+		await fetchAllWeather();
 
-	const carPosition = computed(() => {
-		const totalSlides = TrackData.value.length;
-		if (totalSlides <= 1) return 0;
-		return (trackIndex.value / (totalSlides - 1)) * 100; // in %
-	});
+		isLoading.value = false;
 
-	// Update the car position manually when the trackIndex changes
-	watch(trackIndex, (newIndex) => {
-		const car = document.getElementById("racecar");
-		if (car) {
-			car.style.left = `calc(${carPosition.value}%`;
-		}
+		await nextTick();
 	});
 </script>
 
 <template>
 	<Swiper
 		v-if="!isLoading && hasValidWeather"
-		:modules="modules"
+		:modules="[Pagination, Navigation]"
 		:slides-per-view="1"
-		:initial-slide="nextRaceIndex"
+		:initial-slide="trackIndex"
 		:space-between="0"
 		:grab-cursor="true"
-		@slideChange="onSlideChange"
 		:pagination="pagination"
 		:navigation="true"
 		class="full-screen-swiper"
 	>
-		<SwiperSlide v-for="(track, index) in TrackData" :key="index">
+		<SwiperSlide v-for="(track, index) in raceData" :key="index">
 			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>
@@ -361,7 +268,7 @@
 		background-color: var(--team-color) !important;
 		z-index: 10;
 		transition: all 0.3s ease-in-out;
-		overflow: visible;
+		overflow: visible; /* needed for the car to show outside if needed */
 	}
 
 	.swiper-pagination-fraction {

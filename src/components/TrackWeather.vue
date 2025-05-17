@@ -1,15 +1,15 @@
 <script setup>
-	import { computed, watch, onMounted } from "vue";
+	import { computed, onMounted, watch } from "vue";
 	import { Skycons } from "skycons-ts";
 
+	// Define the props to receive track data
 	const { track } = defineProps({
 		track: Object,
 	});
 
-	// UV Index
+	// UV Index logic
 	const uvLevel = computed(() => {
 		const uvi = track.weather?.current?.uvi;
-
 		if (uvi === undefined || uvi === null) return null;
 
 		if (uvi <= 2) return { label: "Low", color: "green", textColor: "white" };
@@ -25,13 +25,12 @@
 	// Is it Race Day?
 	const isRaceDay = computed(() => {
 		const today = new Date();
+		const raceDate = new Date(track.date);
 		const todayDateOnly = new Date(
 			today.getFullYear(),
 			today.getMonth(),
 			today.getDate()
 		);
-
-		const raceDate = new Date(track.date);
 		const raceDateOnly = new Date(
 			raceDate.getFullYear(),
 			raceDate.getMonth(),
@@ -41,34 +40,26 @@
 		return raceDateOnly.getTime() === todayDateOnly.getTime();
 	});
 
-	// Race Day Forecast
+	// Race Day Forecast logic
 	const raceDayForecast = computed(() => {
-		// if (!isRaceDay.value) return null;
-
 		const forecastArray = track.weather?.daily;
 		if (!forecastArray) return null;
 
 		const raceDate = new Date(track.date);
-
-		// Find the forecast for the race day
-		const match = forecastArray.find((day) => {
-			const forecastDate = new Date(day.dt * 1000);
-			return (
-				forecastDate.getUTCFullYear() === raceDate.getUTCFullYear() &&
-				forecastDate.getUTCMonth() === raceDate.getUTCMonth() &&
-				forecastDate.getUTCDate() === raceDate.getUTCDate()
-			);
-		});
-
-		return match || null;
+		return (
+			forecastArray.find((day) => {
+				const forecastDate = new Date(day.dt * 1000);
+				return forecastDate.toDateString() === raceDate.toDateString();
+			}) || null
+		);
 	});
 
+	// Generate Skycons icon ID
 	const iconId = `skycon-${track.raceName.replace(/\s+/g, "-").toLowerCase()}`;
 
-	// Helper function to get the matching icon
+	// Helper function to get the matching Skycon icon based on description
 	const getSkyconType = (desc) => {
-		if (!desc || typeof desc !== "string") return "partly-cloudy-day";
-
+		if (!desc) return "partly-cloudy-day";
 		const d = desc.toLowerCase();
 		if (d.includes("clear")) return "clear-day";
 		if (d.includes("cloud")) return "cloudy";
@@ -77,10 +68,10 @@
 		if (d.includes("snow")) return "snow";
 		if (d.includes("fog") || d.includes("mist") || d.includes("haze"))
 			return "fog";
-
-		return "partly-cloudy-day"; // safe fallback
+		return "partly-cloudy-day"; // Fallback
 	};
 
+	// Skycons initialization and icon update
 	onMounted(() => {
 		const desc = track.weather?.current?.weather?.[0]?.description;
 		const icon = getSkyconType(desc);
@@ -90,28 +81,27 @@
 		skycons.play();
 	});
 
+	// Watch for weather description updates and update the icon
 	watch(
 		() => track.weather?.current?.weather?.[0]?.description,
 		(newDesc) => {
 			const icon = getSkyconType(newDesc);
-
 			const skycons = new Skycons({ color: "white" });
 			skycons.set(iconId, icon);
 		}
 	);
 
-	const localUnix = computed(() => {
-		return track.weather.current.dt + track.weather.timezone_offset;
-	});
-
-	const formattedTime = computed(() => {
-		return new Date(localUnix.value * 1000).toLocaleTimeString([], {
+	// Format local time
+	const localUnix = computed(
+		() => track.weather.current.dt + track.weather.timezone_offset
+	);
+	const formattedTime = computed(() =>
+		new Date(localUnix.value * 1000).toLocaleTimeString([], {
 			hour: "2-digit",
 			minute: "2-digit",
 			timeZone: "UTC",
-		});
-	});
-	// console.log(formattedTime);
+		})
+	);
 </script>
 
 <template>
@@ -123,41 +113,20 @@
 			<div v-else-if="track.isNext">
 				<p class="nextRace-text">Up Next</p>
 			</div>
-			<!-- UpNext texted UV Badge -->
+
+			<!-- UV Index Badge -->
 			<p
 				v-if="(uvLevel && isRaceDay) || track.isNext"
 				class="uv-badge"
-				:style="{
-					backgroundColor: uvLevel.color,
-					color: uvLevel.textColor,
-					top: '-10%',
-					right: 0,
-				}"
+				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
 			>
-				<span>UV Index: </span>
-				<span :style="{ fontWeight: 'bold' }">
-					{{ uvLevel.label }}
-				</span>
-			</p>
-			<!-- No text uv badge -->
-			<p
-				v-else="uvLevel && !isRaceDay && !track.isNext"
-				class="uv-badge"
-				:style="{
-					backgroundColor: uvLevel.color,
-					color: uvLevel.textColor,
-					top: '-40%',
-					right: '-34%',
-				}"
-			>
-				<span>UV Index: </span>
-				<span :style="{ fontWeight: 'bold' }">
-					{{ uvLevel.label }}
-				</span>
+				<span>UV Index: </span
+				><span :style="{ fontWeight: 'bold' }">{{ uvLevel.label }}</span>
 			</p>
 
 			<h2 class="italic-text">{{ track.raceName }}</h2>
 		</div>
+
 		<h2 class="italic-text">
 			{{
 				new Date(track.date).toLocaleDateString("en-US", {
@@ -169,18 +138,16 @@
 			}}
 		</h2>
 		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
+
+		<!-- Weather Data -->
 		<div v-if="track.weather">
-			<p>
-				Local Time:
-				{{ formattedTime }}
-			</p>
+			<p>Local Time: {{ formattedTime }}</p>
 			<p style="font-size: 29px">
 				{{ Math.round(track.weather.current.temp) }}°C
 			</p>
+
 			<div style="display: flex; align-items: center; justify-content: center">
-				<p>
-					{{ track.weather.current.weather[0].description }}
-				</p>
+				<p>{{ track.weather.current.weather[0].description }}</p>
 				<canvas
 					class="weather-icon"
 					:id="iconId"
@@ -188,13 +155,14 @@
 					height="70"
 				></canvas>
 			</div>
+
 			<p>Humidity: {{ track.weather.current.humidity }}%</p>
 			<p>Clouds: {{ track.weather.current.clouds }}%</p>
 			<p>Wind: {{ track.weather.current.wind_speed }} metre/sec</p>
 			<p v-if="track.weather.current.rain">
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
-			<br />
+
 			<div v-if="raceDayForecast && !isRaceDay" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
 				Race Day Condition: {{ raceDayForecast.weather[0].description }}
@@ -206,6 +174,7 @@
 				</p>
 			</div>
 		</div>
+
 		<div v-else>
 			<p>Loading weather...</p>
 		</div>
