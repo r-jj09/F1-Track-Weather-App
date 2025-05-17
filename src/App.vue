@@ -5,7 +5,7 @@
 	import "swiper/css/pagination";
 	import "swiper/css/navigation";
 	import { Pagination, Navigation } from "swiper/modules";
-	import tracks from "@/data/tracks.json";
+	// import tracks from "@/data/tracks.json";
 	import TrackWeather from "./components/TrackWeather.vue";
 	import { nextTick } from "vue";
 
@@ -15,32 +15,56 @@
 
 	const isLoading = ref(true);
 
+	// Get the current year
+	const currentYear = new Date().getFullYear();
+
+	// Construct the API URL dynamically
+	const apiUrl = `https://api.jolpi.ca/ergast/f1/${currentYear}/races.json`;
+
 	// Get the current date and time
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+	const tracks = ref([]);
+
+	// Fetch the data
+	const fetchAllTrackData = async () => {
+		const response = await fetch(apiUrl);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = await response.json();
+		// Ergast API: races are in data.MRData.RaceTable.Races
+		tracks.value = data.MRData?.RaceTable?.Races || [];
+	};
+	console.log(tracks.value);
+
 	// Find next race
-	const nextRaceIndex = tracks.findIndex((track) => {
-		const raceDate = new Date(track.date);
-		const raceDay = new Date(
-			raceDate.getFullYear(),
-			raceDate.getMonth(),
-			raceDate.getDate()
-		);
-		return raceDay >= today;
+	const nextRaceIndex = computed(() => {
+		return tracks.value.findIndex((track) => {
+			const raceDate = new Date(track.date);
+			const raceDay = new Date(
+				raceDate.getFullYear(),
+				raceDate.getMonth(),
+				raceDate.getDate()
+			);
+			return raceDay >= today;
+		});
 	});
 
-	const tracksWithNextIndicator = tracks.map((track, index) => ({
-		...track,
-		isNext: index === nextRaceIndex,
-	}));
+	const tracksWithNextIndicator = computed(() =>
+		tracks.value.map((track, index) => ({
+			...track,
+			isNext: index === nextRaceIndex.value,
+		}))
+	);
 
 	const weatherData = ref({});
 
 	const fetchAllWeather = async () => {
 		const results = {};
 
-		for (const track of tracksWithNextIndicator) {
+		for (const track of tracksWithNextIndicator.value) {
 			const { lat, long } = track.location;
 
 			try {
@@ -75,7 +99,7 @@
 		raceName.toLowerCase().replace(/\s+/g, "-");
 
 	const TrackData = computed(() => {
-		return tracksWithNextIndicator.map((track) => {
+		return tracksWithNextIndicator.value.map((track) => {
 			const key = createWeatherKey(track.raceName);
 			return {
 				...track,
@@ -91,6 +115,7 @@
 
 	onMounted(async () => {
 		await fetchAllWeather();
+		await fetchAllTrackData();
 		isLoading.value = false;
 
 		await nextTick();
@@ -336,7 +361,7 @@
 		background-color: var(--team-color) !important;
 		z-index: 10;
 		transition: all 0.3s ease-in-out;
-		overflow: visible; /* needed for the car to show outside if needed */
+		overflow: visible;
 	}
 
 	.swiper-pagination-fraction {

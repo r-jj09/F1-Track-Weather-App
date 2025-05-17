@@ -111,7 +111,7 @@
 			timeZone: "UTC",
 		});
 	});
-	console.log(formattedTime);
+	// console.log(formattedTime);
 </script>
 
 <template>
