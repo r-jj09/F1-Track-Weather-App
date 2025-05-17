@@ -102,6 +102,8 @@
 			timeZone: "UTC",
 		})
 	);
+
+	console.log(track);
 </script>
 
 <template>
@@ -137,7 +139,10 @@
 				})
 			}}
 		</h2>
-		<p class="italic-text">{{ track.circuitName }}, {{ track.country }}</p>
+		<p class="italic-text">
+			{{ track.Circuit.circuitName }}, {{ track.Circuit.Location.locality }} ,
+			{{ track.Circuit.Location.country }}
+		</p>
 
 		<!-- Weather Data -->
 		<div v-if="track.weather">

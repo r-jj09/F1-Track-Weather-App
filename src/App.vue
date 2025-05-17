@@ -66,6 +66,12 @@
 	);
 	trackIndex.value = nextRaceIndex !== -1 ? nextRaceIndex : 0;
 
+	// Tag the next race
+	const tracksWithNextIndicator = tracks.map((track, index) => ({
+		...track,
+		isNext: index === nextRaceIndex,
+	}));
+
 	// Swiper pagination
 	const pagination = computed(() => ({
 		type: isMobileDevice.value ? "fraction" : "progressbar",
