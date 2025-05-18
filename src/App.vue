@@ -10,7 +10,7 @@
 	// State variables
 	const hasValidWeather = ref(false);
 	const isLoading = ref(true);
-	const raceData = ref([]); // To store race data
+	const tracks = ref([]);
 	const weatherData = ref({});
 	const trackIndex = ref(0);
 
@@ -21,17 +21,24 @@
 	const apiUrl = `https://api.jolpi.ca/ergast/f1/${currentYear}/races.json`;
 
 	// Fetch the race data
-	const fetchRaceData = async () => {
+	const fetchTracks = async () => {
 		try {
 			const response = await fetch(apiUrl);
 			const data = await response.json();
-			raceData.value = data.MRData.RaceTable.Races; // Update state with fetched data
+			tracks.value = data.MRData.RaceTable.Races; // Update state with fetched data
 
 			// Now that we have race data, calculate next race
-			const nextRaceIndex = raceData.value.findIndex(
-				(track) => new Date(track.date) >= new Date()
+			const todayRaceIndex = tracks.value.findIndex((track) =>
+				isToday(track.date)
 			);
-			trackIndex.value = nextRaceIndex !== -1 ? nextRaceIndex : 0; // Set track index to the next race or first race
+			if (todayRaceIndex !== -1) {
+				trackIndex.value = todayRaceIndex;
+			} else {
+				const nextIdx = tracks.value.findIndex(
+					(track) => new Date(track.date) >= new Date()
+				);
+				trackIndex.value = nextIdx !== -1 ? nextIdx : 0;
+			}
 		} catch (error) {
 			console.error("Error fetching race data:", error);
 		}
@@ -41,14 +48,17 @@
 	const fetchAllWeather = async () => {
 		const results = {};
 
-		for (const track of raceData.value) {
+		for (const track of tracks.value) {
 			const { lat, long } = track.Circuit.Location;
+			const latNum = parseFloat(lat);
+			const lonNum = parseFloat(long);
 			const res = await fetch(
-				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${long}&exclude=minutely,hourly,alerts&appid=${
+				`https://api.openweathermap.org/data/2.5/onecall?lat=${latNum}&lon=${lonNum}&exclude=minutely,hourly,alerts&appid=${
 					import.meta.env.VITE_WEATHER_API_KEY
 				}&units=metric`
 			);
 			const data = await res.json();
+			console.log("Weather fetch for", track.raceName, latNum, lonNum, data);
 			const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
 			results[key] = data.current ? data : null;
 		}
@@ -60,17 +70,20 @@
 		isLoading.value = false;
 	};
 
-	// Find next race
-	const nextRaceIndex = raceData.value.findIndex(
-		(track) => new Date(track.date) >= new Date()
-	);
-	trackIndex.value = nextRaceIndex !== -1 ? nextRaceIndex : 0;
+	// Find next race index reactively
+	const nextRaceIndex = computed(() => {
+		return tracks.value.findIndex(
+			(track) => new Date(track.date) >= new Date()
+		);
+	});
 
 	// Tag the next race
-	const tracksWithNextIndicator = tracks.map((track, index) => ({
-		...track,
-		isNext: index === nextRaceIndex,
-	}));
+	const tracksWithNextIndicator = computed(() =>
+		tracks.value.map((track, index) => ({
+			...track,
+			isNext: index === nextRaceIndex,
+		}))
+	);
 
 	// Swiper pagination
 	const pagination = computed(() => ({
@@ -86,13 +99,25 @@
 	});
 
 	onMounted(async () => {
-		await fetchRaceData();
+		await fetchTracks();
 		await fetchAllWeather();
 
 		isLoading.value = false;
 
 		await nextTick();
 	});
+
+	function isToday(dateStr) {
+		const today = new Date();
+		const date = new Date(dateStr);
+		return (
+			date.getFullYear() === today.getFullYear() &&
+			date.getMonth() === today.getMonth() &&
+			date.getDate() === today.getDate()
+		);
+	}
+
+	console.log("Loaded API key:", import.meta.env.VITE_WEATHER_API_KEY);
 </script>
 
 <template>
@@ -107,7 +132,7 @@
 		:navigation="true"
 		class="full-screen-swiper"
 	>
-		<SwiperSlide v-for="(track, index) in raceData" :key="index">
+		<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
 			<TrackWeather :track="track" />
 		</SwiperSlide>
 	</Swiper>
