@@ -118,7 +118,7 @@
 
 			<!-- UV Index Badge -->
 			<p
-				v-if="(uvLevel && isRaceDay) || track.isNext"
+				v-if="uvLevel"
 				class="uv-badge"
 				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
 			>
@@ -180,9 +180,9 @@
 			</div>
 		</div>
 
-		<div v-else>
+		<!-- <div v-else>
 			<p>Loading weather...</p>
-		</div>
+		</div> -->
 	</div>
 </template>
 

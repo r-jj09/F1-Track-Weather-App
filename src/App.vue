@@ -14,6 +14,8 @@
 	const weatherData = ref({});
 	const trackIndex = ref(0);
 
+	const swiperInstance = ref(null); // <-- Add this
+
 	// Get the current year
 	const currentYear = new Date().getFullYear();
 
@@ -50,15 +52,14 @@
 
 		for (const track of tracks.value) {
 			const { lat, long } = track.Circuit.Location;
-			const latNum = parseFloat(lat);
-			const lonNum = parseFloat(long);
+			const lon = long;
 			const res = await fetch(
-				`https://api.openweathermap.org/data/2.5/onecall?lat=${latNum}&lon=${lonNum}&exclude=minutely,hourly,alerts&appid=${
+				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${
 					import.meta.env.VITE_WEATHER_API_KEY
 				}&units=metric`
 			);
 			const data = await res.json();
-			console.log("Weather fetch for", track.raceName, latNum, lonNum, data);
+			console.log("Weather fetch for", track.raceName, lat, lon, data);
 			const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
 			results[key] = data.current ? data : null;
 		}
@@ -79,10 +80,14 @@
 
 	// Tag the next race
 	const tracksWithNextIndicator = computed(() =>
-		tracks.value.map((track, index) => ({
-			...track,
-			isNext: index === nextRaceIndex,
-		}))
+		tracks.value.map((track, index) => {
+			const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
+			return {
+				...track,
+				isNext: index === nextRaceIndex.value,
+				weather: weatherData.value[key] || null, // Attach weather here
+			};
+		})
 	);
 
 	// Swiper pagination
@@ -96,6 +101,33 @@
 	onMounted(() => {
 		const ua = navigator.userAgent || window.opera;
 		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
+	});
+
+	// --- Racecar marker logic ---
+	const racecarLeft = ref("0%");
+
+	function updateRacecarPosition(activeIndex) {
+		const total = tracksWithNextIndicator.value.length;
+		if (total <= 1) {
+			racecarLeft.value = "0%";
+			return;
+		}
+		const percent = (activeIndex / (total - 1)) * 100;
+		racecarLeft.value = `calc(${percent}% - 30px)`; // 30px is half the racecar width
+	}
+
+	// Watch for Swiper slide changes
+	function onSwiper(swiper) {
+		swiperInstance.value = swiper;
+		updateRacecarPosition(swiper.activeIndex);
+		swiper.on("slideChange", () => {
+			updateRacecarPosition(swiper.activeIndex);
+		});
+	}
+
+	// Update on initial slide index change
+	watch(trackIndex, (idx) => {
+		updateRacecarPosition(idx);
 	});
 
 	onMounted(async () => {
@@ -116,8 +148,6 @@
 			date.getDate() === today.getDate()
 		);
 	}
-
-	console.log("Loaded API key:", import.meta.env.VITE_WEATHER_API_KEY);
 </script>
 
 <template>
@@ -131,6 +161,7 @@
 		:pagination="pagination"
 		:navigation="true"
 		class="full-screen-swiper"
+		@swiper="onSwiper"
 	>
 		<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
 			<TrackWeather :track="track" />
@@ -140,6 +171,7 @@
 		v-if="!isMobileDevice && !isLoading"
 		id="racecar"
 		class="racecar-marker"
+		:style="{ left: racecarLeft }"
 	></div>
 
 	<!-- ! Loading Animation by https://codepen.io/tholman/pen/AvWXMr -->
