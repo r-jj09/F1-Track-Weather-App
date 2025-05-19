@@ -152,14 +152,12 @@
 					height="70"
 				></canvas>
 			</div>
-
 			<p>Humidity: {{ track.weather.current.humidity }}%</p>
 			<p>Clouds: {{ track.weather.current.clouds }}%</p>
-			<p>Wind: {{ track.weather.current.wind_speed }} metre/sec</p>
+			<p>Wind: {{ track.weather.current.wind_speed }} meter/sec</p>
 			<p v-if="track.weather.current.rain">
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
-
 			<div v-if="raceDayForecast && !isRaceDay" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
 				Race Day Condition: {{ raceDayForecast.weather[0].description }}
@@ -185,7 +183,7 @@
 		align-items: center;
 		height: 70%;
 		background-color: #ffffffb7;
-		border-radius: 8px;
+		border-radius: 35px;
 		padding: 20px;
 		box-shadow: 0 0 8px 5px rgba(0, 0, 0, 0.1);
 		text-align: center;

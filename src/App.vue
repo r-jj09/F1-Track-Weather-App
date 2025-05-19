@@ -289,11 +289,6 @@
 		height: 100dvh;
 	}
 
-	body,
-	.swiper-slide {
-		background-color: #14a5a570;
-	}
-
 	.swiper-slide {
 		display: flex;
 		align-items: center;
@@ -302,7 +297,7 @@
 
 	.swiper-button-next,
 	.swiper-button-prev {
-		color: #860303 !important;
+		color: #ffffff !important;
 		/* color: var(--team-color) !important; */
 	}
 

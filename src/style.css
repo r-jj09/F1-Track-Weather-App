@@ -12,5 +12,8 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: #14a5a570;
+    background-image: url(/public\pexels-abed-ismail-6697875.jpg);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
 }
