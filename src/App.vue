@@ -7,29 +7,25 @@
 	import { Pagination, Navigation } from "swiper/modules";
 	import TrackWeather from "./components/TrackWeather.vue";
 
-	// State variables
 	const hasValidWeather = ref(false);
 	const isLoading = ref(true);
 	const tracks = ref([]);
 	const weatherData = ref({});
 	const trackIndex = ref(0);
 
-	const swiperInstance = ref(null); // <-- Add this
+	const swiperInstance = ref(null);
 
-	// Get the current year
 	const currentYear = new Date().getFullYear();
 
-	// Construct the API URL dynamically
 	const apiUrl = `https://api.jolpi.ca/ergast/f1/${currentYear}/races.json`;
 
-	// Fetch the race data
+	// Race Data
 	const fetchTracks = async () => {
 		try {
 			const response = await fetch(apiUrl);
 			const data = await response.json();
-			tracks.value = data.MRData.RaceTable.Races; // Update state with fetched data
+			tracks.value = data.MRData.RaceTable.Races;
 
-			// Now that we have race data, calculate next race
 			const todayRaceIndex = tracks.value.findIndex((track) =>
 				isToday(track.date)
 			);
@@ -46,7 +42,7 @@
 		}
 	};
 
-	// Weather fetching function
+	// Weather Data
 	const fetchAllWeather = async () => {
 		const results = {};
 
@@ -71,7 +67,7 @@
 		isLoading.value = false;
 	};
 
-	// Find next race index reactively
+	// Find next race index
 	const nextRaceIndex = computed(() => {
 		return tracks.value.findIndex(
 			(track) => new Date(track.date) >= new Date()
@@ -96,14 +92,12 @@
 		clickable: true,
 	}));
 
-	// Detect if it's a mobile device
 	const isMobileDevice = ref(false);
 	onMounted(() => {
 		const ua = navigator.userAgent || window.opera;
 		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
 	});
 
-	// --- Racecar marker logic ---
 	const racecarLeft = ref("0%");
 
 	function updateRacecarPosition(activeIndex) {
@@ -113,7 +107,7 @@
 			return;
 		}
 		const percent = (activeIndex / (total - 1)) * 100;
-		racecarLeft.value = `calc(${percent}% - 30px)`; // 30px is half the racecar width
+		racecarLeft.value = `calc(${percent}% - 30px)`;
 	}
 
 	// Watch for Swiper slide changes
@@ -125,7 +119,6 @@
 		});
 	}
 
-	// Update on initial slide index change
 	watch(trackIndex, (idx) => {
 		updateRacecarPosition(idx);
 	});

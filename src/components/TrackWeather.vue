@@ -2,7 +2,6 @@
 	import { computed, onMounted, watch } from "vue";
 	import { Skycons } from "skycons-ts";
 
-	// Define the props to receive track data
 	const { track } = defineProps({
 		track: Object,
 	});
@@ -54,10 +53,9 @@
 		);
 	});
 
-	// Generate Skycons icon ID
+	// Weather icons
 	const iconId = `skycon-${track.raceName.replace(/\s+/g, "-").toLowerCase()}`;
 
-	// Helper function to get the matching Skycon icon based on description
 	const getSkyconType = (desc) => {
 		if (!desc) return "partly-cloudy-day";
 		const d = desc.toLowerCase();
@@ -68,10 +66,9 @@
 		if (d.includes("snow")) return "snow";
 		if (d.includes("fog") || d.includes("mist") || d.includes("haze"))
 			return "fog";
-		return "partly-cloudy-day"; // Fallback
+		return "partly-cloudy-day";
 	};
 
-	// Skycons initialization and icon update
 	onMounted(() => {
 		const desc = track.weather?.current?.weather?.[0]?.description;
 		const icon = getSkyconType(desc);
@@ -81,7 +78,6 @@
 		skycons.play();
 	});
 
-	// Watch for weather description updates and update the icon
 	watch(
 		() => track.weather?.current?.weather?.[0]?.description,
 		(newDesc) => {
@@ -115,8 +111,6 @@
 			<div v-else-if="track.isNext">
 				<p class="nextRace-text">Up Next</p>
 			</div>
-
-			<!-- UV Index Badge -->
 			<p
 				v-if="uvLevel"
 				class="uv-badge"
@@ -143,8 +137,6 @@
 			{{ track.Circuit.circuitName }}, {{ track.Circuit.Location.locality }} ,
 			{{ track.Circuit.Location.country }}
 		</p>
-
-		<!-- Weather Data -->
 		<div v-if="track.weather">
 			<p>Local Time: {{ formattedTime }}</p>
 			<p style="font-size: 29px">
@@ -179,10 +171,9 @@
 				</p>
 			</div>
 		</div>
-
-		<!-- <div v-else>
+		<div v-else>
 			<p>Loading weather...</p>
-		</div> -->
+		</div>
 	</div>
 </template>
 
