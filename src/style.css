@@ -12,7 +12,7 @@
 body {
     margin: 0;
     padding: 0;
-    background-image: url(/public\pexels-abed-ismail-6697875.jpg);
+    background-image: url('./abudabibackground.jpg');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;

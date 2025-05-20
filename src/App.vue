@@ -320,7 +320,7 @@
 		background-color: var(--team-color) !important;
 		z-index: 10;
 		transition: all 0.3s ease-in-out;
-		overflow: visible; /* needed for the car to show outside if needed */
+		overflow: visible;
 	}
 
 	.swiper-pagination-fraction {
@@ -333,7 +333,6 @@
 		width: 60px;
 		height: 70px;
 		background-image: url(/racecar.svg);
-
 		background-size: contain;
 		background-repeat: no-repeat;
 		transform: translateX(-50%);
