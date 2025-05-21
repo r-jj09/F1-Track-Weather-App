@@ -12,7 +12,7 @@
 body {
     margin: 0;
     padding: 0;
-    background-image: url('./abudabibackground.jpg');
+    background-image: url('/public/abudabibackground.png');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
