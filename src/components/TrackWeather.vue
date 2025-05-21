@@ -181,13 +181,13 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		height: 70%;
+		height: 60%;
 		background-color: #ffffffb7;
 		border-radius: 35px;
 		padding: 20px;
 		box-shadow: 0 0 8px 5px rgba(0, 0, 0, 0.1);
 		text-align: center;
-		width: 80%;
+		width: 50%;
 		margin: auto;
 	}
 
