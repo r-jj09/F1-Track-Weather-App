@@ -298,8 +298,7 @@
 
 	.swiper-button-next,
 	.swiper-button-prev {
-		color: #ffffff !important;
-		/* color: var(--team-color) !important; */
+		color: #fff;
 	}
 
 	.swiper-pagination-progressbar {
@@ -324,8 +323,7 @@
 	}
 
 	.swiper-pagination-fraction {
-		/* color: var(--team-color) !important; */
-		color: #860303 !important;
+		color: #fff;
 	}
 	.racecar-marker {
 		position: absolute;
@@ -340,4 +338,6 @@
 		pointer-events: none;
 		z-index: 10;
 	}
+
+	/* Mobile view */
 </style>

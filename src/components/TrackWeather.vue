@@ -1,6 +1,7 @@
 <script setup>
-	import { computed, onMounted, watch } from "vue";
+	import { computed, onMounted, watch, ref, onUnmounted } from "vue";
 	import { Skycons } from "skycons-ts";
+	import VanillaTilt from "vanilla-tilt";
 
 	const { track } = defineProps({
 		track: Object,
@@ -53,14 +54,37 @@
 		);
 	});
 
+	// Format local time
+	const localUnix = computed(
+		() => track.weather.current.dt + track.weather.timezone_offset
+	);
+	const formattedTime = computed(() =>
+		new Date(localUnix.value * 1000).toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+			timeZone: "UTC",
+		})
+	);
+
 	// Weather icons
 	const iconId = `skycon-${track.raceName.replace(/\s+/g, "-").toLowerCase()}`;
+
+	const isDaytime =
+		track.weather.current.dt >= track.weather.current.sunrise &&
+		track.weather.current.dt <= track.weather.current.sunset;
+
+	console.log(track.Circuit.Location.country, isDaytime);
 
 	const getSkyconType = (desc) => {
 		if (!desc) return "partly-cloudy-day";
 		const d = desc.toLowerCase();
-		if (d.includes("clear")) return "clear-day";
-		if (d.includes("cloud")) return "cloudy";
+		if (d.includes("clear")) return isDaytime ? "clear-day" : "clear-night";
+		if (d.includes("few clouds"))
+			return isDaytime ? "partly-cloudy-day" : "partly-cloudy-night";
+		if (d.includes("scattered clouds"))
+			return isDaytime ? "partly-cloudy-day" : "partly-cloudy-night";
+		if (d.includes("broken clouds")) return "cloudy";
+		if (d.includes("overcast clouds")) return "cloudy";
 		if (d.includes("rain")) return "rain";
 		if (d.includes("storm") || d.includes("thunder")) return "sleet";
 		if (d.includes("snow")) return "snow";
@@ -73,7 +97,7 @@
 		const desc = track.weather?.current?.weather?.[0]?.description;
 		const icon = getSkyconType(desc);
 
-		const skycons = new Skycons({ color: "black" });
+		const skycons = new Skycons({ color: "white" });
 		skycons.add(iconId, icon);
 		skycons.play();
 	});
@@ -87,23 +111,38 @@
 		}
 	);
 
-	// Format local time
-	const localUnix = computed(
-		() => track.weather.current.dt + track.weather.timezone_offset
-	);
-	const formattedTime = computed(() =>
-		new Date(localUnix.value * 1000).toLocaleTimeString([], {
-			hour: "2-digit",
-			minute: "2-digit",
-			timeZone: "UTC",
-		})
-	);
-
 	console.log(track);
+
+	// VanillaTilt logic
+	const card = ref(null);
+
+	onMounted(() => {
+		if (card.value) {
+			VanillaTilt.init(card.value, {
+				reverse: false,
+				max: 5,
+				speed: 300,
+			});
+		}
+
+		window.addEventListener("deviceorientation", handleDeviceOrientation);
+	});
+
+	const handleDeviceOrientation = (event) => {
+		const { alpha, beta, gamma } = event;
+
+		if (card.value) {
+			card.value.style.transform = `rotateX(${beta}deg) rotateY(${gamma}deg) rotateZ(${alpha}deg)`;
+		}
+	};
+
+	onUnmounted(() => {
+		window.removeEventListener("deviceorientation", handleDeviceOrientation);
+	});
 </script>
 
 <template>
-	<div class="track-card">
+	<div class="track-card" ref="card">
 		<div class="track-title-uv">
 			<div v-if="isRaceDay">
 				<p class="nextRace-text">Race Day</p>
@@ -137,30 +176,48 @@
 			{{ track.Circuit.circuitName }}, {{ track.Circuit.Location.locality }} ,
 			{{ track.Circuit.Location.country }}
 		</p>
-		<div v-if="track.weather">
+		<div class="weather-text" v-if="track.weather">
 			<p>Local Time: {{ formattedTime }}</p>
-			<p style="font-size: 29px">
-				{{ Math.round(track.weather.current.temp) }}°C
-			</p>
-
-			<div style="display: flex; align-items: center; justify-content: center">
-				<p>{{ track.weather.current.weather[0].description }}</p>
-				<canvas
-					class="weather-icon"
-					:id="iconId"
-					width="70"
-					height="70"
-				></canvas>
+			<div
+				style="
+					display: flex;
+					flex-direction: row;
+					align-items: center;
+					justify-content: center;
+				"
+			>
+				<p class="weather-temp" style="font-size: 29px">
+					{{ Math.round(track.weather.current.temp) }}°C
+				</p>
+				<div
+					style="
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						flex-direction: column;
+					"
+				>
+					<canvas
+						class="weather-icon"
+						:id="iconId"
+						width="70"
+						height="70"
+						color="white"
+					></canvas>
+					<!-- <p style="font-size: 10px">
+						{{ track.weather.current.weather[0].description }}
+					</p> -->
+				</div>
 			</div>
+
 			<p>Humidity: {{ track.weather.current.humidity }}%</p>
 			<p>Clouds: {{ track.weather.current.clouds }}%</p>
-			<p>Wind: {{ track.weather.current.wind_speed }} meter/sec</p>
 			<p v-if="track.weather.current.rain">
 				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
 			</p>
 			<div v-if="raceDayForecast && !isRaceDay" class="race-forecast">
 				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
-				Race Day Condition: {{ raceDayForecast.weather[0].description }}
+				<p>Race Day Condition: {{ raceDayForecast.weather[0].description }}</p>
 				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
 			</div>
 			<div v-else-if="isRaceDay">
@@ -181,14 +238,16 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		height: 60%;
-		background-color: #ffffffb7;
+		height: 80%;
+		background-color: #15a4fda6;
 		border-radius: 35px;
 		padding: 20px;
 		box-shadow: 0 0 8px 5px rgba(0, 0, 0, 0.1);
 		text-align: center;
 		width: 50%;
 		margin: auto;
+		/* border: 5px solid #cb007b; */
+		color: #ffff;
 	}
 
 	.track-title-uv {
@@ -209,7 +268,7 @@
 
 	.nextRace-text {
 		text-transform: uppercase;
-		font-size: 25px;
+		font-size: 22px !important;
 		color: #860303;
 		font-weight: 700;
 	}
@@ -218,7 +277,21 @@
 		font-style: italic;
 	}
 
+	.weather-text p,
+	.race-forecast p,
+	.italic-text {
+		text-shadow: 1px 1px 2px #cb007b !important;
+	}
+
+	.race-forecast p {
+		font-size: 17px;
+		font-weight: 900;
+		color: #cb007b;
+		text-shadow: 1px 1px 2px #ffffff !important;
+	}
+
 	.weather-icon {
+		padding: 10px;
 		display: flex;
 	}
 
@@ -226,16 +299,25 @@
 
 	@media (max-width: 768px) {
 		.track-card {
-			height: max-content;
+			height: 80%;
+			width: 80%;
 			padding: 10px;
 		}
 
-		.nextRace-text {
-			font-size: 20px;
+		.italic-text,
+		.weather-text p {
+			font-size: 16px;
+		}
+		.uv-badge {
+			font-size: 14px !important;
 		}
 
-		.italic-text {
-			font-size: 16px;
+		.weather-temp {
+			font-size: 24px !important;
+		}
+
+		.nextRace-text {
+			font-size: 20px !important;
 		}
 
 		.weather-icon {
