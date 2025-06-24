@@ -1,7 +1,3 @@
-/* body {
-    background: #efefef;
-} */
-
 .preloader {
     position: absolute;
     margin-left: -55px;
@@ -18,9 +14,9 @@ svg {
 }
 
 path {
-    stroke: #9ea1a4;
+    stroke: #d8d8d8;
     stroke-width: 0.25;
-    fill: #241E20;
+    fill: #f0f0f0;
 }
 
 #cloud {
@@ -153,7 +149,7 @@ path {
     margin-left: -43px;
     font-weight: bold;
     margin-top: 20px;
-    font-size: 11px;
-    color: #a0a0a0;
+    font-size: 16px;
+    color: white;
     width: 200px;
 }

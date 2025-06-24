@@ -123,6 +123,14 @@
 		updateRacecarPosition(idx);
 	});
 
+	watch(isLoading, (val) => {
+		if (val) {
+			document.body.style.backgroundColor = "#3434a3"; // Fallback background while loading
+		} else {
+			document.body.style.backgroundImage = "url('/abudabibackground.png')";
+		}
+	});
+
 	onMounted(async () => {
 		await fetchTracks();
 		await fetchAllWeather();

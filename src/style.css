@@ -10,9 +10,9 @@
 }
 
 body {
+    background-color: rgb(18, 18, 63);
     margin: 0;
     padding: 0;
-    background-image: url('/public/abudabibackground.png');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
