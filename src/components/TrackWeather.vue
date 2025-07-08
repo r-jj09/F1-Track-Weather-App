@@ -239,10 +239,10 @@
 		justify-content: center;
 		align-items: center;
 		height: 80%;
-		background-color: #15a4fda6;
+		background-color: hsla(336, 100%, 50%, 0.5);
 		border-radius: 35px;
 		padding: 20px;
-		box-shadow: 0 0 8px 5px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 0 8px 5px rgba(255, 255, 255, 0.863);
 		text-align: center;
 		width: 50%;
 		margin: auto;
@@ -269,7 +269,8 @@
 	.nextRace-text {
 		text-transform: uppercase;
 		font-size: 22px !important;
-		color: #860303;
+		color: #ff0267;
+		text-shadow: #ffffff 2px 2px 1px;
 		font-weight: 700;
 	}
 
@@ -280,7 +281,7 @@
 	.weather-text p,
 	.race-forecast p,
 	.italic-text {
-		text-shadow: 1px 1px 2px #cb007b !important;
+		text-shadow: 1px 1px 2px #000000 !important;
 	}
 
 	.race-forecast p {

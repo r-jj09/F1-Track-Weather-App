@@ -127,7 +127,8 @@
 		if (val) {
 			document.body.style.backgroundColor = "#3434a3"; // Fallback background while loading
 		} else {
-			document.body.style.backgroundImage = "url('/abudabibackground.png')";
+			document.body.style.backgroundImage =
+				"url('/F1_track_weather_app_background.png')";
 		}
 	});
 
