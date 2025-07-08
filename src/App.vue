@@ -150,6 +150,37 @@
 			date.getDate() === today.getDate()
 		);
 	}
+
+	const teamColors = {
+		ferrari: "#DC0000", // Iconic Scuderia Ferrari red
+		redbull: "#1E41FF", // Dark navy-blue with a vibrant punch
+		mercedes: "#00D2BE", // Petronas turquoise
+		sauber: "#52E252", // Bright green — represents the new C44 "Kick" livery
+		mclaren: "#FF8000", // Papaya orange
+		williams: "#005AFF", // Deep Williams blue
+		alpine: "#FF87BC", // Pink BWT Alpine (common in some races)
+		haas: "#7D1A1A", // Rich maroon with a gritty race feel
+		racingbulls: "#FFFFFF", // VCARB: mostly white with navy trim
+		aston: "#00665E", // British racing green (dark green-teal)
+	};
+
+	const randomTeamEntry = computed(() => {
+		const entries = Object.entries(teamColors);
+		const randomIndex = Math.floor(Math.random() * entries.length);
+		const [team, color] = entries[randomIndex];
+		return { team, color };
+	});
+
+	// console.log("Random Team Entry:", randomTeamEntry.value.color);
+	// console.log("Random Team Entry:", randomTeamEntry.value.team);
+
+	watch(
+		() => randomTeamEntry.value.color,
+		(newColor) => {
+			document.documentElement.style.setProperty("--team-color", newColor);
+		},
+		{ immediate: true } // set it right away on load too
+	);
 </script>
 
 <template>
