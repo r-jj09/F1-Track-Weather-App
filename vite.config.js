@@ -21,10 +21,10 @@ export default defineConfig({
 					{
 						src: "pwa-192x192.jpg",
 						sizes: "192x192",
-						type: "image/jgp",
+						type: "image/jpg",
 					},
 					{
-						src: "pwa-512x512.jgp",
+						src: "pwa-512x512.jpg",
 						sizes: "512x512",
 						type: "image/jpg",
 					},

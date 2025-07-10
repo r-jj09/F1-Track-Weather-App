@@ -128,7 +128,7 @@
 
 	onMounted(() => {
 		if (typeof window !== "undefined") {
-			if (card.value && !isMobileDevice) {
+			if (card.value && isMobileDevice) {
 				VanillaTilt.init(card.value, {
 					reverse: false,
 					max: 5,
