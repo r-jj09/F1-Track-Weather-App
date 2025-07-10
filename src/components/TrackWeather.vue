@@ -3,12 +3,11 @@
 	import { Skycons } from "skycons-ts";
 	import VanillaTilt from "vanilla-tilt";
 
-	const { track, isMobileDevice } = defineProps({
+	const props = defineProps({
 		track: Object,
 		isMobileDevice: Boolean,
 	});
-
-	const { isMobileDevice } = toRefs(props);
+	const { track, isMobileDevice } = toRefs(props);
 
 	// UV Index logic
 	const uvLevel = computed(() => {
