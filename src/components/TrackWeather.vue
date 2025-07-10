@@ -1,5 +1,5 @@
 <script setup>
-	import { computed, onMounted, watch, ref, onUnmounted } from "vue";
+	import { computed, onMounted, watch, ref, onUnmounted, toRefs } from "vue";
 	import { Skycons } from "skycons-ts";
 	import VanillaTilt from "vanilla-tilt";
 
@@ -7,6 +7,8 @@
 		track: Object,
 		isMobileDevice: Boolean,
 	});
+
+	const { isMobileDevice } = toRefs(props);
 
 	// UV Index logic
 	const uvLevel = computed(() => {
@@ -116,37 +118,22 @@
 
 	// VanillaTilt logic
 	const card = ref(null);
-	let tiltInstance = null;
-
-	const handleDeviceOrientation = (event) => {
-		const { alpha, beta, gamma } = event;
-
-		if (card.value) {
-			card.value.style.transform = `rotateX(${beta}deg) rotateY(${gamma}deg) rotateZ(${alpha}deg)`;
-		}
-	};
 
 	onMounted(() => {
-		if (typeof window !== "undefined") {
-			if (card.value && isMobileDevice) {
-				VanillaTilt.init(card.value, {
-					reverse: false,
-					max: 5,
-					speed: 300,
-				});
-				tiltInstance = card.value.vanillaTilt;
-			}
+		if (card.value && !isMobileDevice.value) {
+			VanillaTilt.init(card.value, {
+				reverse: false,
+				max: 5,
+				speed: 300,
+			});
 
 			window.addEventListener("deviceorientation", handleDeviceOrientation);
 		}
 	});
 
 	onUnmounted(() => {
-		if (typeof window !== "undefined") {
+		if (!isMobileDevice.value) {
 			window.removeEventListener("deviceorientation", handleDeviceOrientation);
-			if (tiltInstance && tiltInstance.destroy) {
-				tiltInstance.destroy();
-			}
 		}
 	});
 </script>
