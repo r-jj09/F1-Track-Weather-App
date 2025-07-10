@@ -3,8 +3,9 @@
 	import { Skycons } from "skycons-ts";
 	import VanillaTilt from "vanilla-tilt";
 
-	const { track } = defineProps({
+	const { track, isMobileDevice } = defineProps({
 		track: Object,
+		isMobileDevice: Boolean,
 	});
 
 	// UV Index logic
@@ -73,7 +74,7 @@
 		track.weather.current.dt >= track.weather.current.sunrise &&
 		track.weather.current.dt <= track.weather.current.sunset;
 
-	console.log(track.Circuit.Location.country, isDaytime);
+	// console.log(track.Circuit.Location.country, isDaytime);
 
 	const getSkyconType = (desc) => {
 		if (!desc) return "partly-cloudy-day";
@@ -111,13 +112,13 @@
 		}
 	);
 
-	console.log(track);
+	// console.log(track);
 
 	// VanillaTilt logic
 	const card = ref(null);
 
 	onMounted(() => {
-		if (card.value) {
+		if (card.value && !isMobileDevice) {
 			VanillaTilt.init(card.value, {
 				reverse: false,
 				max: 5,

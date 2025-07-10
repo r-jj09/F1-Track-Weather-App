@@ -197,7 +197,7 @@
 		@swiper="onSwiper"
 	>
 		<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
-			<TrackWeather :track="track" />
+			<TrackWeather :track="track" :is-mobile-device="isMobileDevice" />
 		</SwiperSlide>
 	</Swiper>
 	<div

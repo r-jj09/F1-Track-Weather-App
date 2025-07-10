@@ -19,14 +19,14 @@ export default defineConfig({
 				start_url: "/",
 				icons: [
 					{
-						src: "pwa-192x192.png",
+						src: "pwa-192x192.jpg",
 						sizes: "192x192",
-						type: "image/png",
+						type: "image/jgp",
 					},
 					{
-						src: "pwa-512x512.png",
+						src: "pwa-512x512.jgp",
 						sizes: "512x512",
-						type: "image/png",
+						type: "image/jpg",
 					},
 				],
 			},
