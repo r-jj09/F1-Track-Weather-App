@@ -8,13 +8,13 @@ export default defineConfig({
 		vue(),
 		VitePWA({
 			registerType: "autoUpdate",
-			includeAssets: ["favicon.svg", "pwa-192x192.png", "pwa-512x512.png"],
+			includeAssets: ["favicon.svg", "pwa-192x192.jpg", "pwa-512x512.jpg"],
 			manifest: {
 				name: "F1 Track Weather",
 				short_name: "F1Weather",
 				description: "Weather + UV info for every F1 race 🏁",
-				theme_color: "#0f172a",
-				background_color: "#ffffff",
+				theme_color: "#ff0267",
+				background_color: "#0000",
 				display: "standalone",
 				start_url: "/",
 				icons: [

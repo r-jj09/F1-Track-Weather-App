@@ -116,18 +116,7 @@
 
 	// VanillaTilt logic
 	const card = ref(null);
-
-	onMounted(() => {
-		if (card.value && !isMobileDevice) {
-			VanillaTilt.init(card.value, {
-				reverse: false,
-				max: 5,
-				speed: 300,
-			});
-		}
-
-		window.addEventListener("deviceorientation", handleDeviceOrientation);
-	});
+	let tiltInstance = null;
 
 	const handleDeviceOrientation = (event) => {
 		const { alpha, beta, gamma } = event;
@@ -137,8 +126,28 @@
 		}
 	};
 
+	onMounted(() => {
+		if (typeof window !== "undefined") {
+			if (card.value && !isMobileDevice) {
+				VanillaTilt.init(card.value, {
+					reverse: false,
+					max: 5,
+					speed: 300,
+				});
+				tiltInstance = card.value.vanillaTilt;
+			}
+
+			window.addEventListener("deviceorientation", handleDeviceOrientation);
+		}
+	});
+
 	onUnmounted(() => {
-		window.removeEventListener("deviceorientation", handleDeviceOrientation);
+		if (typeof window !== "undefined") {
+			window.removeEventListener("deviceorientation", handleDeviceOrientation);
+			if (tiltInstance && tiltInstance.destroy) {
+				tiltInstance.destroy();
+			}
+		}
 	});
 </script>
 
