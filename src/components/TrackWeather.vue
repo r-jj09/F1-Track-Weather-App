@@ -7,7 +7,9 @@
 		track: Object,
 		isMobileDevice: Boolean,
 	});
-	const { track, isMobileDevice } = toRefs(props);
+
+	const track = props.track; // plain prop, not reactive
+	const { isMobileDevice } = toRefs(props); // just the one that needs reactivity
 
 	// UV Index logic
 	const uvLevel = computed(() => {
@@ -117,6 +119,14 @@
 
 	// VanillaTilt logic
 	const card = ref(null);
+
+	const handleDeviceOrientation = (event) => {
+		const { alpha, beta, gamma } = event;
+
+		if (card.value) {
+			card.value.style.transform = `rotateX(${beta}deg) rotateY(${gamma}deg) rotateZ(${alpha}deg)`;
+		}
+	};
 
 	onMounted(() => {
 		if (card.value && !isMobileDevice.value) {

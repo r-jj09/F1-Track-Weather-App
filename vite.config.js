@@ -11,10 +11,10 @@ export default defineConfig({
 			includeAssets: ["favicon.svg", "pwa-192x192.png", "pwa-512x512.png"],
 			manifest: {
 				name: "F1 Track Weather",
-				short_name: "F1Weather",
+				short_name: "F1 Track Weather",
 				description: "Weather + UV info for every F1 race 🏁",
 				theme_color: "#ff0267",
-				background_color: "#0000",
+				background_color: "#ff0267",
 				display: "standalone",
 				start_url: "/",
 				icons: [
