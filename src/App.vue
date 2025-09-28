@@ -6,16 +6,18 @@
 	import "swiper/css/navigation";
 	import { Pagination, Navigation } from "swiper/modules";
 	import TrackWeather from "./components/TrackWeather.vue";
+	import OffSeason from "./components/OffSeason.vue";
+	const modules = import.meta.glob("@/data/*tracks.json", { eager: true });
+	const currentYear = new Date().getFullYear();
+	const tracksBackUp = modules[`/src/data/${currentYear}tracks.json`];
 
 	const hasValidWeather = ref(false);
 	const isLoading = ref(true);
-	const tracks = ref([]);
+	var tracks = ref([]);
 	const weatherData = ref({});
 	const trackIndex = ref(0);
 
 	const swiperInstance = ref(null);
-
-	const currentYear = new Date().getFullYear();
 
 	const apiUrl = `https://api.jolpi.ca/ergast/f1/${currentYear}/races.json`;
 
@@ -24,7 +26,14 @@
 		try {
 			const response = await fetch(apiUrl);
 			const data = await response.json();
-			tracks.value = data.MRData.RaceTable.Races;
+
+			// Failsafe if the API doesn't have data
+
+			if (data.MRData.RaceTable.Races.length > 0) {
+				tracks.value = data.MRData.RaceTable.Races;
+			} else {
+				tracks.value = tracksBackUp;
+			}
 
 			const todayRaceIndex = tracks.value.findIndex((track) =>
 				isToday(track.date)
