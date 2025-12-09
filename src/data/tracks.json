@@ -1,7 +1,7 @@
 [
     {
         "raceName": "Australian Grand Prix",
-        "date": "2025-03-16",
+        "date": "2026-03-08",
         "circuitName": "Albert Park Circuit",
         "country": "Australia",
         "location": {
@@ -11,7 +11,7 @@
     },
     {
         "raceName": "Chinese Grand Prix",
-        "date": "2025-03-23",
+        "date": "2025-03-15",
         "circuitName": "Shanghai International Circuit",
         "country": "China",
         "location": {
@@ -21,7 +21,7 @@
     },
     {
         "raceName": "Japanese Grand Prix",
-        "date": "2025-04-06",
+        "date": "2025-03-29",
         "circuitName": "Suzuka International Racing Course",
         "country": "Japan",
         "location": {
