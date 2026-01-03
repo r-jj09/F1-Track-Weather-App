@@ -73,11 +73,12 @@
 	// Weather icons
 	const iconId = `skycon-${track.raceName.replace(/\s+/g, "-").toLowerCase()}`;
 
-	const isDaytime =
-		track.weather.current.dt >= track.weather.current.sunrise &&
-		track.weather.current.dt <= track.weather.current.sunset;
+  const isDaytime =
+      track.weather?.current &&
+      track.weather.current.dt >= track.weather.current.sunrise &&
+      track.weather.current.dt <= track.weather.current.sunset;
 
-	// console.log(track.Circuit.Location.country, isDaytime);
+	console.log(track.Circuit.Location.country, isDaytime);
 
 	const getSkyconType = (desc) => {
 		if (!desc) return "partly-cloudy-day";

@@ -1,6 +1,6 @@
 <script setup>
 	import { ref, onMounted, computed, watch, nextTick } from "vue";
-	import { Swiper, SwiperSlide } from "swiper/vue";
+  import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
 	import "swiper/css/pagination";
 	import "swiper/css/navigation";
@@ -88,33 +88,108 @@
     isLoading.value = false;
   };
 
+  // City location
 
-	// Weather Data
-	const fetchAllWeather = async () => {
-		const results = {};
+  const GEO_CACHE_PREFIX = "geo:";
 
-		for (const track of tracks.value) {
-			const { lat, long } = track.Circuit.Location;
-			const lon = long;
-			const res = await fetch(
-				`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${
-					import.meta.env.VITE_WEATHER_API_KEY
-				}&units=metric`
-			);
-			const data = await res.json();
-			/*console.log("Weather fetch for", track.raceName, lat, lon, data);*/
-			const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
-			results[key] = data.current ? data : null;
-		}
+  function isValidCoord(n, min, max) {
+    return Number.isFinite(n) && n >= min && n <= max;
+  }
 
-		weatherData.value = results;
-		hasValidWeather.value = Object.values(results).some(
-			(data) => data && data.current
-		);
-		isLoading.value = false;
-	};
+  async function geocodeCity(locality, country) {
+    // IMPORTANT: Use the same key env var you already have
+    const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
 
-	// Find next race index
+    // OpenWeather geocoding API
+    const url =
+        `https://api.openweathermap.org/geo/1.0/direct` +
+        `?q=${encodeURIComponent(`${locality},${country}`)}` +
+        `&limit=1&appid=${apiKey}`;
+
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    return { lat: data[0].lat, lon: data[0].lon, accuracy: "city" };
+  }
+
+  async function getCoordsWithFallback(track) {
+    const loc = track.Circuit?.Location;
+
+    const lat = Number.parseFloat(loc?.lat);
+    const lon = Number.parseFloat(loc?.long);
+
+    // 1) Use track coords if valid
+    if (isValidCoord(lat, -90, 90) && isValidCoord(lon, -180, 180)) {
+      return { lat, lon, accuracy: "track" };
+    }
+
+    // 2) Only if missing/invalid -> try cached geocode
+    const locality = loc?.locality;
+    const country = loc?.country;
+    if (!locality || !country) return null;
+
+    const cacheKey = `${GEO_CACHE_PREFIX}${locality},${country}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    // 3) Only now call geocode API (rare)
+    const cityCoords = await geocodeCity(locality, country);
+    if (!cityCoords) return null;
+
+    localStorage.setItem(cacheKey, JSON.stringify(cityCoords));
+    return cityCoords;
+  }
+
+  // Weather Data
+  const fetchAllWeather = async () => {
+    const results = {};
+
+    for (const track of tracks.value) {
+      const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
+
+      try {
+        const coords = await getCoordsWithFallback(track);
+
+        // If we still don't have coords, just mark weather null and continue
+        if (!coords) {
+          results[key] = null;
+          continue;
+        }
+
+        const res = await fetch(
+            `https://api.openweathermap.org/data/3.0/onecall` +
+            `?lat=${coords.lat}&lon=${coords.lon}` +
+            `&exclude=minutely,hourly,alerts` +
+            `&appid=${import.meta.env.VITE_WEATHER_API_KEY}` +
+            `&units=metric`
+        );
+
+        if (!res.ok) {
+          results[key] = null;
+          continue;
+        }
+
+        const data = await res.json();
+        results[key] = data?.current ? data : null;
+
+        // Optional: if you want to know which ones were city-fallback
+        // track.coordsAccuracy = coords.accuracy;
+
+      } catch (e) {
+        results[key] = null;
+      }
+    }
+
+    weatherData.value = results;
+    hasValidWeather.value = Object.values(results).some((d) => d && d.current);
+    isLoading.value = false;
+  };
+
+
+  // Find next race index
 	const nextRaceIndex = computed(() => {
 		return tracks.value.findIndex(
 			(track) => new Date(track.date) >= new Date()
