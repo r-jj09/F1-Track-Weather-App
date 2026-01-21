@@ -245,14 +245,14 @@
 		updateRacecarPosition(idx);
 	});
 
-	watch(isLoading, (val) => {
+	/*watch(isLoading, (val) => {
 		if (val) {
 			document.body.style.backgroundColor = "#3434a3"; // Fallback background while loading
 		} else {
 			document.body.style.backgroundImage =
 				"url('/F1_track_weather_app_background.png')";
 		}
-	});
+	});*/
 
 	onMounted(async () => {
 		await fetchTracks();
@@ -277,14 +277,14 @@
 		ferrari: "#DC0000", // Iconic Scuderia Ferrari red
 		redbull: "#00106a", // Dark navy-blue with a vibrant punch
 		mercedes: "#00D2BE", // Petronas turquoise
-		sauber: "#52E252", // Bright green — represents the new C44 "Kick" livery
+		audi: "#818181", // Chrome gray
 		mclaren: "#FF8000", // Papaya orange
 		williams: "#1666f8", // Deep Williams blue
 		alpine: "#FF87BC", // Pink BWT Alpine (common in some races)
 		haas: "#7D1A1A", // Rich maroon with a gritty race feel
 		racingbulls: "#FFFFFF", // VCARB: mostly white with navy trim
 		aston: "#00665E", // British racing green (dark green-teal)
-    cadilac: "#383838", // Kinda gray stuff going on for them righ now
+    cadilac: "#262626", // Dark gray, almost black (update after the car launch pls!!)
 	};
 
 	const randomTeamEntry = computed(() => {

@@ -17,3 +17,7 @@ body {
     background-repeat: no-repeat;
     background-position: center;
 }
+
+.swiper{
+    background-image: url("/F1_track_weather_app_background.png");
+}
