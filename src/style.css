@@ -20,4 +20,6 @@ body {
 
 .swiper{
     background-image: url("/F1_track_weather_app_background.png");
+    background-position: center;
+    background-size: cover;
 }
