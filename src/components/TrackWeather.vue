@@ -262,8 +262,8 @@
 	}
 
 	.uv-badge {
-		top: -35px;
-		right: 0;
+    top: -40px;
+    right: -60px;
 		position: absolute;
 		color: white;
 		border-radius: 15px;
@@ -279,6 +279,7 @@
 		color: #ff0267;
 		text-shadow: #ffffff 2px 2px 1px;
 		font-weight: 700;
+    margin-top: 0;
 	}
 
 	.italic-text {
