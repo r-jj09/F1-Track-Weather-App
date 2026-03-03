@@ -8,8 +8,8 @@
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
 	const currentYear = new Date().getFullYear();
-  const modules = import.meta.glob("@/data/*tracks.json", { eager: true });
-  const tracksBackUp = modules["/src/data/tracks.json"]; // 👈 this is fine if Vite gives you the parsed JSON directly
+  const modules = import.meta.glob("/src/data/*tracks.json", { eager: true });
+  const tracksBackUp = modules["/src/data/tracks.json"];
 
 
   const hasValidWeather = ref(false);
