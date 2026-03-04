@@ -37,19 +37,23 @@
       const data = await response.json();
 
       const races =
-          data?.MRData?.RaceTable?.Races && Array.isArray(data.MRData.RaceTable.Races)
+          data?.MRData?.RaceTable?.Races &&
+          Array.isArray(data.MRData.RaceTable.Races)
               ? data.MRData.RaceTable.Races
               : [];
 
       if (races.length > 0) {
+        console.log("🟢 Loaded tracks from API");
         tracks.value = races;
       } else {
-        console.warn("Race API returned no races, using local tracks.json");
-        tracks.value = tracksBackUp;
+        console.warn("🟡 API returned empty — using backup JSON");
+        tracks.value = tracksBackUp?.default ?? [];
       }
     } catch (error) {
-      console.error("Error fetching race data, falling back to tracks.json:", error);
-      tracks.value = tracksBackUp;
+      console.warn("🔴 API failed — using backup JSON");
+      tracks.value = tracksBackUp?.default ?? [];
+
+      console.log("Backup array:", tracksBackUp.default);
     }
 
     if (tracks.value && tracks.value.length) {
