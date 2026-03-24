@@ -1,5 +1,28 @@
-# Vue 3 + Vite
+# F1 Track Weather App
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+A web app that displays real-time weather data for every circuit on the current Formula 1 calendar, always showing the next upcoming race.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+🔗 [f1-track-weather-app.vercel.app](https://f1-track-weather-app.vercel.app/)
+
+---
+
+## Features
+
+- Tracks the F1 race calendar and always surfaces the next upcoming race
+- Real-time weather at the circuit location — temperature, humidity, cloud coverage
+- UV Index indicator and local time for the race venue
+- Swiper animations for smooth view transitions
+- Installable as a PWA
+
+---
+
+## Tech Stack
+
+| Tool | Purpose |
+|---|---|
+| [Vue 3](https://vuejs.org/) | Frontend framework |
+| [Vite](https://vitejs.dev/) | Build tool |
+| [OpenWeatherMap API](https://openweathermap.org/api) | Real-time weather data |
+| [Jolpica F1 API](https://jolpi.ca/) | F1 calendar & circuit data |
+| [Swiper.js](https://swiperjs.com/) | Animations & transitions |
+| [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) | PWA support |
