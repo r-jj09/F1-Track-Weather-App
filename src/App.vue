@@ -306,7 +306,7 @@
 		(newColor) => {
 			document.documentElement.style.setProperty("--team-color", newColor);
 		},
-		{ immediate: true } // set it right away on load too
+		{ immediate: true }
 	);
 </script>
 
@@ -314,7 +314,10 @@
   <div
       v-if="isLoading || !hasValidWeather"
       class="preloader"
-      style="opacity: 1"
+      style="
+        opacity: 1;
+        z-index: 11;
+        position: fixed;"
   >
     <svg
         version="1.1"
@@ -440,7 +443,7 @@
 
   <OffSeason v-if="isOffSeason"></OffSeason>
 	<div
-		v-if="!isMobileDevice && !isLoading"
+      v-if="!isMobileDevice && !isLoading && hasValidWeather"
 		id="racecar"
 		class="racecar-marker"
 		:style="{ left: racecarLeft }"
@@ -505,8 +508,6 @@
 		transform: translateX(-50%);
 		transition: left 0.3s ease-in-out;
 		pointer-events: none;
-		z-index: 10;
+		z-index: 1;
 	}
-
-	/* Mobile view */
 </style>

@@ -39,32 +39,6 @@
     }
   },
   {
-    "raceName": "Bahrain Grand Prix",
-    "date": "2026-04-12",
-    "Circuit": {
-      "circuitName": "Bahrain International Circuit",
-      "Location": {
-        "locality": "Sakhir",
-        "country": "Bahrain",
-        "lat": "26.0325",
-        "long": "50.5106"
-      }
-    }
-  },
-  {
-    "raceName": "Saudi Arabian Grand Prix",
-    "date": "2026-04-19",
-    "Circuit": {
-      "circuitName": "Jeddah Corniche Circuit",
-      "Location": {
-        "locality": "Jeddah",
-        "country": "Saudi Arabia",
-        "lat": "21.6319",
-        "long": "39.1044"
-      }
-    }
-  },
-  {
     "raceName": "Miami Grand Prix",
     "date": "2026-05-03",
     "Circuit": {
