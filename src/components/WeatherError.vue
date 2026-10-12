@@ -186,10 +186,11 @@
 		border-color: #fff;
 	}
 
+	/* Lightened team color: plain Red Bull navy or Cadillac grey disappears on the dark panel */
 	.btn.primary {
-		background: var(--team-color);
-		color: var(--team-ink);
-		border-color: var(--team-color);
+		background: var(--team-glow);
+		color: var(--team-glow-ink);
+		border-color: var(--team-glow);
 	}
 
 	.btn.primary:hover:not(:disabled) {

@@ -337,6 +337,14 @@
 		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 	}
 
+	// Black or white text, whichever contrasts more with the background (white on papaya orange doesn't)
+	function inkFor(hex) {
+		const L = luminance(hex);
+		const onDark = (L + 0.05) / (luminance("#0e0e0e") + 0.05);
+		const onWhite = 1.05 / (L + 0.05);
+		return onDark >= onWhite ? "#0e0e0e" : "#ffffff";
+	}
+
 	// Raise the lightness (keeping hue and saturation) until the color stands out on the dark background
 	function lighten(hex, minLuminance = 0.12) {
 		if (luminance(hex) >= minLuminance) return hex;
@@ -382,9 +390,11 @@
 			// Dark team colors (Red Bull, Cadillac...) fall back to white for text on dark panels
 			root.setProperty("--team-text", L > 0.12 ? newColor : "#ffffff");
 			// Text placed on top of a team-colored background
-			root.setProperty("--team-ink", L > 0.4 ? "#0e0e0e" : "#ffffff");
-			// Glowing elements (start lights): lightened team color instead of plain white
-			root.setProperty("--team-glow", lighten(newColor));
+			root.setProperty("--team-ink", inkFor(newColor));
+			// Glowing elements (start lights) and buttons: lightened team color so it stands out on dark
+			const glow = lighten(newColor);
+			root.setProperty("--team-glow", glow);
+			root.setProperty("--team-glow-ink", inkFor(glow));
 		},
 		{ immediate: true }
 	);
@@ -513,6 +523,7 @@
 		--team-text: #ff0000;
 		--team-ink: #ffffff;
 		--team-glow: #ff0000;
+		--team-glow-ink: #ffffff;
 		--panel-bg: rgba(8, 8, 10, 0.9);
 		--cell-bg: #0b0b0d;
 		--label-font: "JetBrains Mono", monospace;
