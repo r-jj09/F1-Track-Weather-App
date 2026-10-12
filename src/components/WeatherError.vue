@@ -149,7 +149,7 @@
 		font-size: clamp(28px, 5vw, 40px);
 		line-height: 1;
 		font-style: italic;
-		font-weight: 400;
+		font-weight: 700;
 		text-transform: uppercase;
 	}
 

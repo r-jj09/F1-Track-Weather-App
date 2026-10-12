@@ -5,6 +5,7 @@
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
 	import WeatherError from "./components/WeatherError.vue";
+	import SiteFooter from "./components/SiteFooter.vue";
 	import { todayLocal } from "./utils/dates";
 	const currentYear = new Date().getFullYear();
   const modules = import.meta.glob("/src/data/*tracks.json", { eager: true });
@@ -515,6 +516,8 @@
 	</div>
 
   <OffSeason v-if="isOffSeason"></OffSeason>
+
+  <SiteFooter />
 </template>
 
 <style>

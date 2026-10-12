@@ -564,7 +564,7 @@
 		font-size: clamp(28px, 4.6vw, 58px);
 		line-height: 1;
 		font-style: italic;
-		font-weight: 400;
+		font-weight: 700;
 		text-transform: uppercase;
 		text-wrap: balance;
 	}

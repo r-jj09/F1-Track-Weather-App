@@ -46,7 +46,7 @@
 
 h2 {
   margin: 0;
-  font-weight: 400;
+  font-weight: 700;
   font-style: italic;
   font-size: 28px;
   line-height: 1.1;
