@@ -167,7 +167,7 @@
         const res = await fetch(
             `https://api.openweathermap.org/data/3.0/onecall` +
             `?lat=${coords.lat}&lon=${coords.lon}` +
-            `&exclude=minutely,hourly,alerts` +
+            `&exclude=minutely,hourly` +
             `&appid=${import.meta.env.VITE_WEATHER_API_KEY}` +
             `&units=metric`
         );
@@ -186,6 +186,14 @@
       } catch (e) {
         results[key] = null;
       }
+    }
+
+    // Dev only: `?mockAlerts` puts sample alerts on the opening race to preview the flag banners
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has("mockAlerts")) {
+      const { mockAlerts } = await import("./data/mockAlerts.js");
+      const opening = tracks.value[trackIndex.value];
+      const key = opening?.raceName.toLowerCase().replace(/\s+/g, "-");
+      if (results[key]) results[key].alerts = mockAlerts();
     }
 
     weatherData.value = results;

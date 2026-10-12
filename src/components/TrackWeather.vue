@@ -3,6 +3,7 @@
 	import { Skycons } from "skycons-ts";
 	import VanillaTilt from "vanilla-tilt";
 	import { todayAtTrack, trackDate } from "../utils/dates";
+	import { buildAlerts, glossaryTitle, langForCountry, LANG_NAMES, translate } from "../utils/alerts";
 
 	const props = defineProps({
 		track: Object,
@@ -47,6 +48,53 @@
 			null
 		);
 	});
+
+	// Weather alerts → flags (cleaned up, merged per event, translated on demand)
+	const alertLang = langForCountry(track.Circuit.Location.country);
+	const alerts = computed(() => buildAlerts(track.weather?.alerts));
+
+	const formatTrackTime = (unix) =>
+		new Date((unix + (track.weather?.timezone_offset ?? 0)) * 1000).toLocaleString(
+			"en-GB",
+			{ weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }
+		);
+
+	const nowSeconds = Date.now() / 1000;
+
+	// English text by original text, filled in as translations come back
+	const translations = ref({});
+	const translating = ref({});
+
+	async function translateText(text, isTitle = false) {
+		if (!text || text in translations.value || translating.value[text]) return;
+		translating.value[text] = true;
+		const english = await translate(text, alertLang, isTitle);
+		translations.value[text] = english;
+		translating.value[text] = false;
+	}
+
+	const alertTitle = (alert) =>
+		glossaryTitle(alert.event) ?? translations.value[alert.event] ?? alert.event;
+
+	const isTranslated = (text) =>
+		Boolean(translations.value[text]) && translations.value[text] !== text;
+
+	// Titles are always visible, so translate those up front (cached after the first time)
+	watch(
+		alerts,
+		(list) => {
+			for (const alert of list) {
+				if (!glossaryTitle(alert.event)) translateText(alert.event, true);
+			}
+		},
+		{ immediate: true }
+	);
+
+	// Descriptions only when a flag is opened, to keep within MyMemory's free daily quota
+	function onAlertToggle(alert, event) {
+		if (!event.target.open) return;
+		for (const part of alert.parts) translateText(part.description);
+	}
 
 	const formattedDate = new Date(track.date).toLocaleDateString("en-US", {
 		weekday: "long",
@@ -171,6 +219,48 @@
 				{{ formattedDate }} · {{ track.Circuit.circuitName }},
 				{{ track.Circuit.Location.locality }}, {{ track.Circuit.Location.country }}
 			</div>
+		</div>
+
+		<div v-if="alerts.length" class="alerts">
+			<details
+				v-for="alert in alerts"
+				:key="alert.key"
+				class="alert"
+				:style="{ '--flag': alert.flag.color, '--flag-ink': alert.flag.ink }"
+				@toggle="onAlertToggle(alert, $event)"
+			>
+				<summary>
+					<span class="label alert-flag">
+						<i class="fa-solid fa-flag"></i>{{ alert.flag.name }}
+					</span>
+					<span class="alert-text">
+						<span class="alert-event" :title="alert.event">{{ alertTitle(alert) }}</span>
+						<span class="label alert-until">
+							<template v-if="alert.start > nowSeconds">FROM {{ formatTrackTime(alert.start) }} · </template>
+							<template v-if="alert.end">UNTIL {{ formatTrackTime(alert.end) }}</template>
+						</span>
+					</span>
+					<i class="fa-solid fa-chevron-down alert-toggle"></i>
+				</summary>
+				<div class="alert-parts">
+					<div v-for="(part, i) in alert.parts" :key="i" class="alert-part">
+						<div v-if="alert.parts.length > 1" class="label alert-part-time">
+							<span class="alert-part-dot" :style="{ background: part.flag.color }"></span>
+							{{ formatTrackTime(part.start) }} – {{ formatTrackTime(part.end) }}
+						</div>
+						<p class="label alert-description">
+							<template v-if="translating[part.description]">Translating…</template>
+							<template v-else>{{ translations[part.description] || part.description }}</template>
+						</p>
+					</div>
+				</div>
+				<p class="label alert-sender">
+					{{ alert.sender }}
+					<template v-if="alert.parts.some((part) => isTranslated(part.description))">
+						· Translated from {{ LANG_NAMES[alertLang] ?? "the original" }} by MyMemory
+					</template>
+				</p>
+			</details>
 		</div>
 
 		<template v-if="track.weather">
@@ -456,6 +546,127 @@
 		text-transform: capitalize;
 	}
 
+	/* Weather alerts as track flags */
+	.alerts {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.alert {
+		border: 1px solid var(--flag);
+		background: var(--cell-bg);
+	}
+
+	.alert summary {
+		list-style: none;
+		cursor: pointer;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 14px;
+		padding-right: 14px;
+	}
+
+	.alert summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.alert-flag {
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		background: var(--flag);
+		color: var(--flag-ink);
+		font-size: 12px;
+		font-weight: 700;
+		animation: flagWave 1.6s ease-in-out infinite;
+	}
+
+	@keyframes flagWave {
+		0%, 100% { filter: brightness(1); }
+		50% { filter: brightness(0.75); }
+	}
+
+	.alert-text {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2px 14px;
+		padding: 10px 0;
+	}
+
+	.alert-event {
+		font-size: 16px;
+		line-height: 1.2;
+	}
+
+	.alert-until {
+		font-size: 11px;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.alert-toggle {
+		font-size: 12px;
+		color: rgba(255, 255, 255, 0.6);
+		transition: transform 0.2s;
+	}
+
+	.alert[open] .alert-toggle {
+		transform: rotate(180deg);
+	}
+
+	.alert-parts {
+		max-height: 220px;
+		overflow-y: auto;
+		padding: 12px 14px 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.alert-part-time {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 4px;
+		font-size: 11px;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.alert-part-dot {
+		width: 8px;
+		height: 8px;
+		flex-shrink: 0;
+	}
+
+	.alert-description {
+		margin: 0;
+		font-size: 12px;
+		line-height: 1.6;
+		letter-spacing: normal;
+		white-space: pre-line;
+		color: rgba(255, 255, 255, 0.82);
+	}
+
+	.alert-sender {
+		margin: 0;
+		padding: 8px 14px 12px;
+		font-size: 10px;
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.alert-flag {
+			animation: none;
+		}
+	}
+
 	.forecast-unavailable {
 		border: 1px dashed rgba(255, 255, 255, 0.3);
 		padding: 18px;
@@ -474,6 +685,25 @@
 
 		.stat-cell.wide {
 			grid-column: 1 / -1;
+		}
+
+		/* Flag shrinks to its icon, title and time stack */
+		.alert-flag {
+			font-size: 0;
+			gap: 0;
+		}
+
+		.alert-flag i {
+			font-size: 14px;
+		}
+
+		.alert-text {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.alert-event {
+			font-size: 15px;
 		}
 	}
 </style>
