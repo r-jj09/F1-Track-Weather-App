@@ -448,15 +448,16 @@
 			></div>
 		</div>
 
-		<!-- Some (or all, if the user carried on) tracks have no weather -->
+		<!-- Missing weather: safety car, the races are still there, just not at full speed -->
 		<div
 			v-if="weatherError && !bannerDismissed"
 			class="weather-banner"
-			:class="{ red: !hasValidWeather }"
 			role="status"
 		>
 			<span class="label weather-banner-flag">
-				<i class="fa-solid fa-flag"></i>{{ hasValidWeather ? "YELLOW FLAG" : "RED FLAG" }}
+				<span class="sc-lights" aria-hidden="true"><span></span><span></span></span>
+				<i class="fa-solid fa-car-side" aria-hidden="true"></i>
+				<span class="flag-full">SAFETY CAR</span><span class="flag-short">SC</span>
 			</span>
 			<span class="label weather-banner-text">
 				<template v-if="weatherError.kind === 'quota'">Out of weather data for today · </template>
@@ -737,11 +738,6 @@
 		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 	}
 
-	.weather-banner.red {
-		--flag: #e5262b;
-		--flag-ink: #ffffff;
-	}
-
 	.weather-banner-flag {
 		align-self: stretch;
 		display: flex;
@@ -753,6 +749,40 @@
 		font-size: 11px;
 		font-weight: 700;
 		white-space: nowrap;
+	}
+
+	.flag-short {
+		display: none;
+	}
+
+	/* The two orange lights on the safety car's roof, flashing in turn */
+	.sc-lights {
+		display: flex;
+		gap: 3px;
+	}
+
+	.sc-lights span {
+		width: 6px;
+		height: 6px;
+		border-radius: 999px;
+		background: #ff8a1f;
+		box-shadow: 0 0 6px #ff8a1f;
+		animation: scFlash 0.8s steps(1) infinite;
+	}
+
+	.sc-lights span:last-child {
+		animation-delay: 0.4s;
+	}
+
+	@keyframes scFlash {
+		0% { opacity: 1; }
+		50% { opacity: 0.2; box-shadow: none; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.sc-lights span {
+			animation: none;
+		}
 	}
 
 	.weather-banner-text {
@@ -795,13 +825,13 @@
 			top: 36px;
 		}
 
-		.weather-banner-flag {
-			font-size: 0;
-			gap: 0;
+		/* Short like the TV graphic: "SC", or just the flag */
+		.flag-full {
+			display: none;
 		}
 
-		.weather-banner-flag i {
-			font-size: 12px;
+		.flag-short {
+			display: inline;
 		}
 
 		.swiper-slide {
