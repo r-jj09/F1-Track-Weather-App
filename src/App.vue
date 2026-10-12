@@ -2,8 +2,6 @@
 	import { ref, onMounted, computed, watch, nextTick } from "vue";
   import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
-	import "swiper/css/pagination";
-	import { Pagination } from "swiper/modules";
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
 	import { todayLocal } from "./utils/dates";
@@ -223,46 +221,86 @@
 
 	const totalRounds = computed(() => tracksWithNextIndicator.value.length);
 
-	// Swiper pagination (checkered progress bar on every screen size)
-	const pagination = {
-		type: "progressbar",
-	};
-
 	const isMobileDevice = ref(false);
 	onMounted(() => {
 		const ua = navigator.userAgent || window.opera;
 		isMobileDevice.value = /android|iphone|ipad|ipod|mobile/i.test(ua);
 	});
 
-	const racecarLeft = ref("0%");
+	// Progress bar + racecar
+	// One continuous position (0 … totalRounds - 1) drives both the fill and the car,
+	// so the car's nose always sits on the edge of the fill, also while dragging.
+	const position = ref(-1); // -1 = empty bar, the car drives in from here on load
+	const isDragging = ref(false);
+	const isMoving = ref(false);
+	const isReversing = ref(false);
+	const isIntro = ref(true);
+	let movingTimer = null;
 
-	function updateRacecarPosition(index) {
+	const progressPercent = computed(() => {
 		const total = totalRounds.value;
-		if (total <= 1) {
-			racecarLeft.value = "0%";
-			return;
+		if (!total) return 0;
+		const clamped = Math.min(Math.max(position.value, -1), total - 1);
+		return ((clamped + 1) / total) * 100;
+	});
+
+	// Never let the car leave the screen on round 1
+	const racecarLeft = computed(() => `max(var(--car-width), ${progressPercent.value}%)`);
+
+	function setPosition(next) {
+		const delta = next - position.value;
+		if (Math.abs(delta) > 0.001) {
+			isReversing.value = delta < 0;
+			isMoving.value = true;
+			clearTimeout(movingTimer);
+			movingTimer = setTimeout(() => {
+				isMoving.value = false;
+				isReversing.value = false;
+			}, isIntro.value ? 1200 : 400);
 		}
-		const percent = (index / (total - 1)) * 100;
-		racecarLeft.value = `calc(${percent}% - 30px)`;
+		position.value = next;
 	}
 
 	// Watch for Swiper slide changes
 	function onSwiper(swiper) {
 		swiperInstance.value = swiper;
 		activeIndex.value = swiper.activeIndex;
-		updateRacecarPosition(swiper.activeIndex);
 		swiper.on("slideChange", () => {
 			activeIndex.value = swiper.activeIndex;
-			updateRacecarPosition(swiper.activeIndex);
+		});
+
+		// Continuous while dragging, then once more with the final value when it snaps
+		swiper.on("progress", (_swiper, progress) => {
+			if (isIntro.value) return;
+			setPosition(progress * (totalRounds.value - 1));
+		});
+		swiper.on("sliderFirstMove", () => (isDragging.value = true));
+		swiper.on("touchEnd", () => (isDragging.value = false));
+
+		// Drive in from the start line to the opening race
+		requestAnimationFrame(() => {
+			setPosition(swiper.activeIndex);
+			setTimeout(() => {
+				isIntro.value = false;
+				// Catch up if the user already swiped during the intro
+				setPosition(swiper.progress * (totalRounds.value - 1));
+			}, 1200);
 		});
 	}
 
 	const slidePrev = () => swiperInstance.value?.slidePrev();
 	const slideNext = () => swiperInstance.value?.slideNext();
 
-	watch(trackIndex, (idx) => {
-		updateRacecarPosition(idx);
-	});
+	// Click anywhere on the bar to jump to that round
+	function jumpToRound(event) {
+		const bar = event.currentTarget.getBoundingClientRect();
+		const fraction = (event.clientX - bar.left) / bar.width;
+		const round = Math.min(
+			Math.max(Math.floor(fraction * totalRounds.value), 0),
+			totalRounds.value - 1
+		);
+		swiperInstance.value?.slideTo(round);
+	}
 
 	onMounted(async () => {
 		await fetchTracks();
@@ -373,12 +411,10 @@
 
 	<div v-if="!isLoading && hasValidWeather" class="pit-wall">
 		<Swiper
-			:modules="[Pagination]"
 			:slides-per-view="1"
 			:initial-slide="trackIndex"
 			:space-between="0"
 			:grab-cursor="true"
-			:pagination="pagination"
 			class="full-screen-swiper"
 			@swiper="onSwiper"
 		>
@@ -391,7 +427,24 @@
 			</SwiperSlide>
 		</Swiper>
 
-		<div class="racecar-marker" :style="{ left: racecarLeft }"></div>
+		<div
+			class="race-progress"
+			:class="{ dragging: isDragging, intro: isIntro }"
+			role="progressbar"
+			aria-label="Season progress"
+			:aria-valuenow="activeIndex + 1"
+			aria-valuemin="1"
+			:aria-valuemax="totalRounds"
+			title="Jump to a round"
+			@click="jumpToRound"
+		>
+			<div class="race-progress-fill" :style="{ width: `${progressPercent}%` }"></div>
+			<div
+				class="racecar-marker"
+				:class="{ moving: isMoving, reversing: isReversing }"
+				:style="{ left: racecarLeft }"
+			></div>
+		</div>
 
 		<!-- Desktop: side arrows -->
 		<button
@@ -504,40 +557,79 @@
 		overflow-y: auto;
 	}
 
-	.swiper-pagination-progressbar {
-		top: 8px !important;
-		height: 20px !important;
-		background-image: linear-gradient(45deg, #000 25%, transparent 25%),
-			linear-gradient(45deg, transparent 75%, #000 75%),
-			linear-gradient(45deg, transparent 75%, #000 75%),
-			linear-gradient(45deg, #000 25%, #fff 25%);
-		mask: linear-gradient(to right, black 100%) !important;
-		-webkit-mask: linear-gradient(to right, black 100%) !important;
-		background-size: 20px 20px !important;
-		background-position: 0 0, 0 0, -50px -50px, 50px 50px !important;
+	/* Checkered progress bar + racecar */
+	.race-progress {
+		--car-width: 60px;
+		--progress-speed: 0.3s;
+		position: absolute;
+		top: 8px;
+		left: 0;
+		right: 0;
+		height: 20px;
+		z-index: 2;
+		cursor: pointer;
+		background-color: #fff;
+		background-image: conic-gradient(#000 25%, transparent 0 50%, #000 0 75%, transparent 0);
+		background-size: 20px 20px;
 	}
 
-	.swiper-pagination-progressbar-fill {
+	.race-progress.intro {
+		--progress-speed: 1.2s;
+	}
+
+	/* Follow the finger 1:1 while dragging, ease when it snaps */
+	.race-progress.dragging {
+		--progress-speed: 0s;
+	}
+
+	.race-progress-fill {
 		height: 100%;
-		background-color: var(--team-color) !important;
-		z-index: 10;
-		transition: all 0.3s ease-in-out;
-		overflow: visible;
+		background-color: var(--team-color);
+		transition: width var(--progress-speed) cubic-bezier(0.25, 0.8, 0.35, 1);
 	}
 
 	.racecar-marker {
 		position: absolute;
-		top: -11px;
-		width: 60px;
+		top: -25px;
+		width: var(--car-width);
 		height: 70px;
 		background-image: url(/racecar.svg);
 		background-size: contain;
 		background-repeat: no-repeat;
 		background-position: center;
-		transform: translateX(-50%);
-		transition: left 0.3s ease-in-out;
+		/* Nose on the edge of the fill */
+		transform: translateX(-100%);
+		/* White outline so the black car shows on dark team colors */
+		filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
+		transition: left var(--progress-speed) cubic-bezier(0.25, 0.8, 0.35, 1),
+			transform 0.2s ease;
 		pointer-events: none;
-		z-index: 3;
+	}
+
+	/* Turn around when driving back to an earlier round */
+	.racecar-marker.reversing {
+		transform: translateX(-100%) scaleX(-1);
+	}
+
+	/* Engine rumble while moving */
+	.racecar-marker.moving {
+		animation: rumble 0.12s linear infinite;
+	}
+
+	@keyframes rumble {
+		0%, 100% { margin-top: 0; }
+		50% { margin-top: -1px; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.race-progress,
+		.race-progress.intro {
+			--progress-speed: 0s;
+		}
+
+		.racecar-marker.moving {
+			animation: none;
+		}
 	}
 
 	.nav-btn {
@@ -607,9 +699,17 @@
 			padding: 44px 16px 96px;
 		}
 
-		.racecar-marker,
 		.nav-side {
 			display: none;
+		}
+
+		.race-progress {
+			--car-width: 44px;
+		}
+
+		.racecar-marker {
+			top: -16px;
+			height: 52px;
 		}
 
 		.nav-bottom {
