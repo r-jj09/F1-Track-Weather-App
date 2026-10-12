@@ -36,6 +36,15 @@
 	// Already raced this season
 	const isPastRace = computed(() => track.date < todayHere);
 
+	// Today's forecast at the track: chance of rain (`pop`) only exists in forecasts, not in `current`
+	const todayForecast = computed(() => {
+		const forecastArray = track.weather?.daily;
+		if (!forecastArray) return null;
+
+		const offset = track.weather.timezone_offset ?? 0;
+		return forecastArray.find((day) => trackDate(day.dt, offset) === todayHere) ?? null;
+	});
+
 	// Race Day Forecast logic
 	// `daily` covers today + the next 7 days, so this only matches once the race is inside that window
 	const raceDayForecast = computed(() => {
@@ -298,6 +307,12 @@
 							<span class="label cell-label">CLOUDS</span>
 							<span class="stat-value">{{ track.weather.current.clouds }}%</span>
 						</div>
+						<div v-if="todayForecast" class="stat-cell">
+							<span class="label cell-label">RAIN TODAY</span>
+							<span class="stat-value rain">
+								{{ Math.round(todayForecast.pop * 100) }}%<span v-if="todayForecast.rain" class="stat-extra"> · {{ todayForecast.rain.toFixed(1) }} mm</span>
+							</span>
+						</div>
 						<div v-if="track.weather.current.rain" class="stat-cell">
 							<span class="label cell-label">RAIN (1H)</span>
 							<span class="stat-value rain">{{ track.weather.current.rain["1h"] }} mm</span>
@@ -315,7 +330,9 @@
 					</div>
 					<div class="stat-cell">
 						<span class="label cell-label">CHANCE OF RAIN</span>
-						<span class="stat-value rain">{{ Math.round(raceDayForecast.pop * 100) }}%</span>
+						<span class="stat-value rain">
+							{{ Math.round(raceDayForecast.pop * 100) }}%<span v-if="raceDayForecast.rain" class="stat-extra"> · {{ raceDayForecast.rain.toFixed(1) }} mm</span>
+						</span>
 					</div>
 					<div class="stat-cell wide">
 						<span class="label cell-label">CONDITION</span>
@@ -540,6 +557,11 @@
 
 	.stat-value.rain {
 		color: var(--team-text);
+	}
+
+	.stat-extra {
+		font-size: 0.7em;
+		color: rgba(255, 255, 255, 0.6);
 	}
 
 	.capitalize {
