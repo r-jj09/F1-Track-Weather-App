@@ -5,7 +5,7 @@
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
 	import WeatherError from "./components/WeatherError.vue";
-	import { todayLocal, raceStartUnix } from "./utils/dates";
+	import { todayLocal } from "./utils/dates";
 	const currentYear = new Date().getFullYear();
   const modules = import.meta.glob("/src/data/*tracks.json", { eager: true });
   const tracksBackUp = modules["/src/data/tracks.json"];
@@ -92,71 +92,10 @@
     isLoading.value = false;
   };
 
-  // City location
-
-  const GEO_CACHE_PREFIX = "geo:";
-
-  function isValidCoord(n, min, max) {
-    return Number.isFinite(n) && n >= min && n <= max;
-  }
-
-  async function geocodeCity(locality, country) {
-    // IMPORTANT: Use the same key env var you already have
-    const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
-
-    // OpenWeather geocoding API
-    const url =
-        `https://api.openweathermap.org/geo/1.0/direct` +
-        `?q=${encodeURIComponent(`${locality},${country}`)}` +
-        `&limit=1&appid=${apiKey}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
-
-    return { lat: data[0].lat, lon: data[0].lon, accuracy: "city" };
-  }
-
-  async function getCoordsWithFallback(track) {
-    const loc = track.Circuit?.Location;
-
-    const lat = Number.parseFloat(loc?.lat);
-    const lon = Number.parseFloat(loc?.long);
-
-    // 1) Use track coords if valid
-    if (isValidCoord(lat, -90, 90) && isValidCoord(lon, -180, 180)) {
-      return { lat, lon, accuracy: "track" };
-    }
-
-    // 2) Only if missing/invalid -> try cached geocode
-    const locality = loc?.locality;
-    const country = loc?.country;
-    if (!locality || !country) return null;
-
-    const cacheKey = `${GEO_CACHE_PREFIX}${locality},${country}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached);
-
-    // 3) Only now call geocode API (rare)
-    const cityCoords = await geocodeCity(locality, country);
-    if (!cityCoords) return null;
-
-    localStorage.setItem(cacheKey, JSON.stringify(cityCoords));
-    return cityCoords;
-  }
-
-  // Hourly data (48h ahead) is only worth its payload for a race starting within that window
-  function needsHourly(track) {
-    const start = raceStartUnix(track);
-    if (!start) return false;
-    const now = Date.now() / 1000;
-    return start - now <= 48 * 3600 && now <= start + 3 * 3600;
-  }
-
   // Weather Data
-  const WEATHER_TIMEOUT_MS = 10_000;
+  // Comes from our own /api/weather, which caches OpenWeather for every visitor
+  // (one call per track per visitor used to burn through the daily quota)
+  const WEATHER_TIMEOUT_MS = 25_000; // the very first fetch after a cold cache can take a while
 
   // fetch() never times out on its own, a hanging request would keep the loader up forever
   async function fetchWithTimeout(url, ms = WEATHER_TIMEOUT_MS) {
@@ -169,122 +108,69 @@
     }
   }
 
-  // 401 = API key rejected, 429 = out of calls for today
-  const errorKind = (status) =>
-      status === 401 ? "auth" : status === 429 ? "quota" : "server";
+  const trackKey = (track) => track.raceName.toLowerCase().replace(/\s+/g, "-");
 
   // Dev only: `?mockWeatherError=quota|auth|server|timeout|network|partial` previews the error states
   const mockWeatherError = import.meta.env.DEV
       ? new URLSearchParams(location.search).get("mockWeatherError")
       : null;
 
-  async function requestWeather(url, index) {
-    if (mockWeatherError) {
-      const fail = mockWeatherError !== "partial" || index % 4 === 1;
-      if (fail) {
-        if (mockWeatherError === "timeout") throw new DOMException("mock", "AbortError");
-        if (mockWeatherError === "network") throw new TypeError("mock");
-        const status = { quota: 429, auth: 401 }[mockWeatherError] ?? 503;
-        return new Response(null, { status });
-      }
-    }
-    return fetchWithTimeout(url);
-  }
-
-  // { kind, failed, total } when some or all weather requests failed
+  // { kind, failed, total } when some or all tracks have no weather
   const weatherError = ref(null);
 
-  const fetchAllWeather = async ({ onlyMissing = false } = {}) => {
-    const results = onlyMissing ? { ...weatherData.value } : {};
+  const fetchAllWeather = async () => {
+    const params = new URLSearchParams();
 
     // Dev only: `?mockLightsOut` moves the opening race to ~20h from now to preview the lights-out forecast
-    if (!onlyMissing && import.meta.env.DEV && new URLSearchParams(location.search).has("mockLightsOut")) {
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has("mockLightsOut")) {
       const opening = tracks.value[trackIndex.value];
       const start = new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000 + 20 * 3_600_000);
       if (opening) {
         opening.date = start.toISOString().slice(0, 10);
         opening.time = start.toISOString().slice(11, 19) + "Z";
       }
+      params.set("mockLightsOut", "1");
     }
 
-    let failed = 0;
-    let lastKind = null;
-    let stopKind = null; // once set, every other request would fail the same way, so skip them
-    let connectionFailures = 0;
-
-    for (const [index, track] of tracks.value.entries()) {
-      const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
-      if (onlyMissing && results[key]) continue;
-
-      if (stopKind) {
-        results[key] = null;
-        failed++;
-        continue;
-      }
-
+    let body = null;
+    let kind = null;
+    if (mockWeatherError && mockWeatherError !== "partial") {
+      kind = mockWeatherError;
+    } else {
       try {
-        const coords = await getCoordsWithFallback(track);
-
-        // If we still don't have coords, just mark weather null and continue
-        if (!coords) {
-          results[key] = null;
-          continue;
-        }
-
-        const res = await requestWeather(
-            `https://api.openweathermap.org/data/3.0/onecall` +
-            `?lat=${coords.lat}&lon=${coords.lon}` +
-            `&exclude=${needsHourly(track) ? "minutely" : "minutely,hourly"}` +
-            `&appid=${import.meta.env.VITE_WEATHER_API_KEY}` +
-            `&units=metric`,
-            index
-        );
-
-        if (!res.ok) {
-          results[key] = null;
-          failed++;
-          lastKind = errorKind(res.status);
-          if (lastKind === "quota" || lastKind === "auth") stopKind = lastKind;
-          continue;
-        }
-
-        const data = await res.json();
-        results[key] = data?.current ? data : null;
-        connectionFailures = 0;
-
-        // Optional: if you want to know which ones were city-fallback
-        // track.coordsAccuracy = coords.accuracy;
-
+        const query = params.toString();
+        const res = await fetchWithTimeout("/api/weather" + (query ? "?" + query : ""));
+        body = await res.json().catch(() => null);
+        if (!body?.weather) kind = body?.error ?? "server";
       } catch (e) {
-        results[key] = null;
-        failed++;
-        lastKind = e.name === "AbortError" ? "timeout" : "network";
-        // Two in a row means the service (or the connection) is down, don't wait 10s for each track
-        if (++connectionFailures >= 2) stopKind = lastKind;
+        kind = e.name === "AbortError" ? "timeout" : "network";
       }
+    }
+
+    const results = {};
+    for (const [index, track] of tracks.value.entries()) {
+      const data = body?.weather?.[trackKey(track)] ?? null;
+      results[trackKey(track)] = mockWeatherError === "partial" && index % 4 === 1 ? null : data;
     }
 
     // Dev only: `?mockAlerts` puts sample alerts on the opening race to preview the flag banners
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("mockAlerts")) {
       const { mockAlerts } = await import("./data/mockAlerts.js");
       const opening = tracks.value[trackIndex.value];
-      const key = opening?.raceName.toLowerCase().replace(/\s+/g, "-");
-      if (results[key]) results[key].alerts = mockAlerts();
+      if (opening && results[trackKey(opening)]) results[trackKey(opening)].alerts = mockAlerts();
     }
 
     weatherData.value = results;
     hasValidWeather.value = Object.values(results).some((d) => d && d.current);
+
+    const failed = tracks.value.filter((track) => !results[trackKey(track)]).length;
     weatherError.value = failed
-        ? {
-          kind: stopKind ?? lastKind,
-          failed: tracks.value.filter((track) => !results[track.raceName.toLowerCase().replace(/\s+/g, "-")]).length,
-          total: tracks.value.length,
-        }
+        ? { kind: kind ?? body?.error ?? "server", failed, total: tracks.value.length }
         : null;
     isLoading.value = false;
   };
 
-  // Retry only the tracks that failed, to spare API calls
+  // The server only re-requests what's missing and backs off after errors, so a retry is cheap
   const isRetrying = ref(false);
   const showWithoutWeather = ref(false);
   const bannerDismissed = ref(false);
@@ -292,7 +178,7 @@
   async function retryWeather() {
     isRetrying.value = true;
     bannerDismissed.value = false;
-    await fetchAllWeather({ onlyMissing: true });
+    await fetchAllWeather();
     isRetrying.value = false;
   }
 
@@ -314,7 +200,7 @@
 	// Tag the next race
 	const tracksWithNextIndicator = computed(() =>
 		tracks.value.map((track, index) => {
-			const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
+			const key = trackKey(track);
 			return {
 				...track,
 				isNext: index === nextRaceIndex.value,
