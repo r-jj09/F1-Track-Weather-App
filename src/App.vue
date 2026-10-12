@@ -4,7 +4,7 @@
 	import "swiper/css";
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
-	import { todayLocal } from "./utils/dates";
+	import { todayLocal, raceStartUnix } from "./utils/dates";
 	const currentYear = new Date().getFullYear();
   const modules = import.meta.glob("/src/data/*tracks.json", { eager: true });
   const tracksBackUp = modules["/src/data/tracks.json"];
@@ -146,9 +146,27 @@
     return cityCoords;
   }
 
+  // Hourly data (48h ahead) is only worth its payload for a race starting within that window
+  function needsHourly(track) {
+    const start = raceStartUnix(track);
+    if (!start) return false;
+    const now = Date.now() / 1000;
+    return start - now <= 48 * 3600 && now <= start + 3 * 3600;
+  }
+
   // Weather Data
   const fetchAllWeather = async () => {
     const results = {};
+
+    // Dev only: `?mockLightsOut` moves the opening race to ~20h from now to preview the lights-out forecast
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has("mockLightsOut")) {
+      const opening = tracks.value[trackIndex.value];
+      const start = new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000 + 20 * 3_600_000);
+      if (opening) {
+        opening.date = start.toISOString().slice(0, 10);
+        opening.time = start.toISOString().slice(11, 19) + "Z";
+      }
+    }
 
     for (const track of tracks.value) {
       const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
@@ -165,7 +183,7 @@
         const res = await fetch(
             `https://api.openweathermap.org/data/3.0/onecall` +
             `?lat=${coords.lat}&lon=${coords.lon}` +
-            `&exclude=minutely,hourly` +
+            `&exclude=${needsHourly(track) ? "minutely" : "minutely,hourly"}` +
             `&appid=${import.meta.env.VITE_WEATHER_API_KEY}` +
             `&units=metric`
         );

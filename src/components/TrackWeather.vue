@@ -2,7 +2,7 @@
 	import { computed, onMounted, watch, ref, onUnmounted, toRefs } from "vue";
 	import { Skycons } from "skycons-ts";
 	import VanillaTilt from "vanilla-tilt";
-	import { todayAtTrack, trackDate } from "../utils/dates";
+	import { todayAtTrack, trackDate, raceStartUnix, raceDateAtTrack } from "../utils/dates";
 	import { buildAlerts, glossaryTitle, langForCountry, LANG_NAMES, translate } from "../utils/alerts";
 
 	const props = defineProps({
@@ -29,12 +29,13 @@
 		return { label: "Extreme", color: "#8E3BD9", textColor: "#ffffff" };
 	});
 
-	// Is it Race Day? (track.date is the local date at the track)
+	// Is it Race Day? Compared in the track's local time
 	const todayHere = todayAtTrack(track.weather);
-	const isRaceDay = computed(() => track.date === todayHere);
+	const raceDate = raceDateAtTrack(track);
+	const isRaceDay = computed(() => raceDate === todayHere);
 
 	// Already raced this season
-	const isPastRace = computed(() => track.date < todayHere);
+	const isPastRace = computed(() => raceDate < todayHere);
 
 	// Today's forecast at the track: chance of rain (`pop`) only exists in forecasts, not in `current`
 	const todayForecast = computed(() => {
@@ -53,10 +54,94 @@
 
 		const offset = track.weather.timezone_offset ?? 0;
 		return (
-			forecastArray.find((day) => trackDate(day.dt, offset) === track.date) ||
+			forecastArray.find((day) => trackDate(day.dt, offset) === raceDate) ||
 			null
 		);
 	});
+
+	// Lights-out forecast
+	// `hourly` covers the next 48h and is only requested for a race starting inside that window
+	const raceStart = raceStartUnix(track);
+	const now = ref(Date.now() / 1000);
+	const clock = setInterval(() => (now.value = Date.now() / 1000), 60_000);
+
+	const formatHour = (unix) =>
+		new Date((unix + (track.weather?.timezone_offset ?? 0)) * 1000).toLocaleTimeString("en-GB", {
+			hour: "2-digit",
+			minute: "2-digit",
+			timeZone: "UTC",
+		});
+
+	const hourIcon = (hour) => {
+		const weather = hour.weather?.[0];
+		const night = weather?.icon?.endsWith("n");
+		switch (weather?.main) {
+			case "Clear":
+				return night ? "fa-moon" : "fa-sun";
+			case "Clouds":
+				if (weather.id === 801) return night ? "fa-cloud-moon" : "fa-cloud-sun";
+				return "fa-cloud";
+			case "Drizzle":
+				return "fa-cloud-rain";
+			case "Rain":
+				return weather.id >= 502 ? "fa-cloud-showers-heavy" : "fa-cloud-rain";
+			case "Thunderstorm":
+				return "fa-cloud-bolt";
+			case "Snow":
+				return "fa-snowflake";
+			default:
+				return "fa-smog";
+		}
+	};
+
+	// The hour before the start, the start hour and the two race hours after it
+	const lightsOut = computed(() => {
+		const hourly = track.weather?.hourly;
+		if (!raceStart || !Array.isArray(hourly)) return null;
+
+		const startIndex = hourly.findIndex(
+			(hour) => hour.dt <= raceStart && raceStart < hour.dt + 3600
+		);
+		if (startIndex === -1) return null;
+
+		return hourly.slice(Math.max(startIndex - 1, 0), startIndex + 3).map((hour) => ({
+			dt: hour.dt,
+			time: formatHour(hour.dt),
+			temp: Math.round(hour.temp),
+			pop: Math.round((hour.pop ?? 0) * 100),
+			rain: hour.rain?.["1h"] ?? 0,
+			wind: Math.round((hour.wind_speed ?? 0) * 3.6),
+			icon: hourIcon(hour),
+			description: hour.weather?.[0]?.description ?? "",
+			isStart: hour.dt === hourly[startIndex].dt,
+		}));
+	});
+
+	const countdown = computed(() => {
+		if (!raceStart) return null;
+		const diff = raceStart - now.value;
+		if (diff <= 0) return diff > -2 * 3600 ? "RACE ON" : "FINISHED";
+		const days = Math.floor(diff / 86400);
+		const hours = Math.floor((diff % 86400) / 3600);
+		const minutes = Math.floor((diff % 3600) / 60);
+		if (days) return `IN ${days}D ${hours}H`;
+		if (hours) return `IN ${hours}H ${minutes}M`;
+		return `IN ${minutes}M`;
+	});
+
+	const lightsOutLabel = raceStart
+		? new Date((raceStart + (track.weather?.timezone_offset ?? 0)) * 1000).toLocaleString("en-GB", {
+				weekday: "short",
+				hour: "2-digit",
+				minute: "2-digit",
+				timeZone: "UTC",
+			}).toUpperCase()
+		: null;
+
+	// Next race, start time known, but still more than 48h away
+	const showLightsOutHint = computed(
+		() => track.isNext && raceStart && !lightsOut.value && raceStart > now.value
+	);
 
 	// Weather alerts → flags (cleaned up, merged per event, translated on demand)
 	const alertLang = langForCountry(track.Circuit.Location.country);
@@ -105,7 +190,7 @@
 		for (const part of alert.parts) translateText(part.description);
 	}
 
-	const formattedDate = new Date(track.date).toLocaleDateString("en-US", {
+	const formattedDate = new Date(raceDate).toLocaleDateString("en-US", {
 		weekday: "long",
 		year: "numeric",
 		month: "short",
@@ -197,6 +282,7 @@
 	});
 
 	onUnmounted(() => {
+		clearInterval(clock);
 		if (!isMobileDevice.value) {
 			window.removeEventListener("deviceorientation", handleDeviceOrientation);
 		}
@@ -319,6 +405,40 @@
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<div v-if="lightsOut" class="section">
+				<div class="label section-title">
+					<span class="section-dot"></span>LIGHTS OUT
+					<span class="local-time">{{ lightsOutLabel }} LOCAL · {{ countdown }}</span>
+				</div>
+				<div class="hours-row">
+					<div
+						v-for="hour in lightsOut"
+						:key="hour.dt"
+						class="hour-cell"
+						:class="{ start: hour.isStart }"
+					>
+						<span class="label cell-label">
+							{{ hour.time }}<template v-if="hour.isStart"> · START</template>
+						</span>
+						<span class="hour-main">
+							<i class="fa-solid" :class="hour.icon" :title="hour.description"></i>
+							{{ hour.temp }}°
+						</span>
+						<span class="label hour-rain">
+							<i class="fa-solid fa-droplet"></i>{{ hour.pop }}%<template v-if="hour.rain"> · {{ hour.rain.toFixed(1) }} mm</template>
+						</span>
+						<span class="label hour-wind">
+							<i class="fa-solid fa-wind"></i>{{ hour.wind }} km/h
+						</span>
+					</div>
+				</div>
+			</div>
+			<div v-else-if="showLightsOutHint" class="label lights-out-hint">
+				<i class="fa-regular fa-clock"></i>
+				Hour-by-hour lights-out forecast opens 48 hours before the start ·
+				{{ lightsOutLabel }} LOCAL
 			</div>
 
 			<div v-if="raceDayForecast" class="section">
@@ -559,6 +679,70 @@
 		color: var(--team-text);
 	}
 
+	/* Lights-out hourly forecast */
+	.hours-row {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 1px;
+		background: rgba(255, 255, 255, 0.12);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+	}
+
+	.hour-cell {
+		background: var(--cell-bg);
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+		border-top: 3px solid transparent;
+	}
+
+	.hour-cell.start {
+		border-top-color: var(--team-color);
+		background: color-mix(in srgb, var(--team-color) 12%, var(--cell-bg));
+	}
+
+	.hour-cell.start .cell-label {
+		color: var(--team-text);
+	}
+
+	.hour-main {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 24px;
+	}
+
+	.hour-main i {
+		font-size: 20px;
+		width: 24px;
+		text-align: center;
+	}
+
+	.hour-rain,
+	.hour-wind {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 11px;
+		letter-spacing: 0.04em;
+		color: rgba(255, 255, 255, 0.75);
+	}
+
+	.hour-rain {
+		color: var(--team-text);
+	}
+
+	.lights-out-hint {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 11px;
+		line-height: 1.5;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
 	.stat-extra {
 		font-size: 0.7em;
 		color: rgba(255, 255, 255, 0.6);
@@ -707,6 +891,10 @@
 
 		.stat-cell.wide {
 			grid-column: 1 / -1;
+		}
+
+		.hours-row {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 
 		/* Flag shrinks to its icon, title and time stack */
