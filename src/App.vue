@@ -90,7 +90,8 @@
       isOffSeason.value = false;
     }
 
-    isLoading.value = false;
+    // Still loading: fetchAllWeather() ends the loading state once the weather is in.
+    // Ending it here briefly showed the error screen before any weather request had finished.
   };
 
   // Weather Data
@@ -184,7 +185,11 @@
   }
 
   const showErrorScreen = computed(
-      () => !isLoading.value && !hasValidWeather.value && !showWithoutWeather.value
+      () =>
+          !isLoading.value &&
+          !hasValidWeather.value &&
+          !showWithoutWeather.value &&
+          weatherError.value !== null // only once we know what went wrong
   );
   const showPitWall = computed(
       () => !isLoading.value && (hasValidWeather.value || showWithoutWeather.value)
