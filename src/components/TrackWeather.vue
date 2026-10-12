@@ -239,6 +239,8 @@
 	};
 
 	onMounted(() => {
+		// No weather = no icon canvas on the card
+		if (!track.weather) return;
 		const desc = track.weather?.current?.weather?.[0]?.description;
 		const icon = getSkyconType(desc);
 
@@ -461,7 +463,10 @@
 				</div>
 			</div>
 		</template>
-		<div v-else class="forecast-unavailable">Loading weather...</div>
+		<div v-else class="forecast-unavailable no-weather">
+			<i class="fa-solid fa-cloud" aria-hidden="true"></i>
+			<span>Weather for this track isn't available right now.</span>
+		</div>
 	</div>
 </template>
 
@@ -559,7 +564,7 @@
 		font-size: clamp(28px, 4.6vw, 58px);
 		line-height: 1;
 		font-style: italic;
-		font-weight: 400;
+		font-weight: 700;
 		text-transform: uppercase;
 		text-wrap: balance;
 	}
@@ -878,6 +883,17 @@
 		padding: 18px;
 		font-size: 18px;
 		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.no-weather {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.no-weather i {
+		font-size: 24px;
+		color: rgba(255, 255, 255, 0.5);
 	}
 
 	@media (max-width: 768px) {

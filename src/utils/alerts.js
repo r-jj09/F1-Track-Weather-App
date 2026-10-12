@@ -59,7 +59,7 @@ const normalize = (text = "") =>
 		.trim()
 		.toLowerCase()
 		.normalize("NFD")
-		.replace(/[̀-ͯ]/g, "");
+		.replace(/[\u0300-\u036f]/g, "");
 
 const GLOSSARY = {
 	// Brazil — INMET
