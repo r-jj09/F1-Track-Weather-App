@@ -4,6 +4,7 @@
 	import "swiper/css";
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
+	import WeatherError from "./components/WeatherError.vue";
 	import { todayLocal, raceStartUnix } from "./utils/dates";
 	const currentYear = new Date().getFullYear();
   const modules = import.meta.glob("/src/data/*tracks.json", { eager: true });
@@ -109,7 +110,7 @@
         `?q=${encodeURIComponent(`${locality},${country}`)}` +
         `&limit=1&appid=${apiKey}`;
 
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) return null;
 
     const data = await res.json();
@@ -155,11 +156,49 @@
   }
 
   // Weather Data
-  const fetchAllWeather = async () => {
-    const results = {};
+  const WEATHER_TIMEOUT_MS = 10_000;
+
+  // fetch() never times out on its own, a hanging request would keep the loader up forever
+  async function fetchWithTimeout(url, ms = WEATHER_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // 401 = API key rejected, 429 = out of calls for today
+  const errorKind = (status) =>
+      status === 401 ? "auth" : status === 429 ? "quota" : "server";
+
+  // Dev only: `?mockWeatherError=quota|auth|server|timeout|network|partial` previews the error states
+  const mockWeatherError = import.meta.env.DEV
+      ? new URLSearchParams(location.search).get("mockWeatherError")
+      : null;
+
+  async function requestWeather(url, index) {
+    if (mockWeatherError) {
+      const fail = mockWeatherError !== "partial" || index % 4 === 1;
+      if (fail) {
+        if (mockWeatherError === "timeout") throw new DOMException("mock", "AbortError");
+        if (mockWeatherError === "network") throw new TypeError("mock");
+        const status = { quota: 429, auth: 401 }[mockWeatherError] ?? 503;
+        return new Response(null, { status });
+      }
+    }
+    return fetchWithTimeout(url);
+  }
+
+  // { kind, failed, total } when some or all weather requests failed
+  const weatherError = ref(null);
+
+  const fetchAllWeather = async ({ onlyMissing = false } = {}) => {
+    const results = onlyMissing ? { ...weatherData.value } : {};
 
     // Dev only: `?mockLightsOut` moves the opening race to ~20h from now to preview the lights-out forecast
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has("mockLightsOut")) {
+    if (!onlyMissing && import.meta.env.DEV && new URLSearchParams(location.search).has("mockLightsOut")) {
       const opening = tracks.value[trackIndex.value];
       const start = new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000 + 20 * 3_600_000);
       if (opening) {
@@ -168,8 +207,20 @@
       }
     }
 
-    for (const track of tracks.value) {
+    let failed = 0;
+    let lastKind = null;
+    let stopKind = null; // once set, every other request would fail the same way, so skip them
+    let connectionFailures = 0;
+
+    for (const [index, track] of tracks.value.entries()) {
       const key = track.raceName.toLowerCase().replace(/\s+/g, "-");
+      if (onlyMissing && results[key]) continue;
+
+      if (stopKind) {
+        results[key] = null;
+        failed++;
+        continue;
+      }
 
       try {
         const coords = await getCoordsWithFallback(track);
@@ -180,27 +231,36 @@
           continue;
         }
 
-        const res = await fetch(
+        const res = await requestWeather(
             `https://api.openweathermap.org/data/3.0/onecall` +
             `?lat=${coords.lat}&lon=${coords.lon}` +
             `&exclude=${needsHourly(track) ? "minutely" : "minutely,hourly"}` +
             `&appid=${import.meta.env.VITE_WEATHER_API_KEY}` +
-            `&units=metric`
+            `&units=metric`,
+            index
         );
 
         if (!res.ok) {
           results[key] = null;
+          failed++;
+          lastKind = errorKind(res.status);
+          if (lastKind === "quota" || lastKind === "auth") stopKind = lastKind;
           continue;
         }
 
         const data = await res.json();
         results[key] = data?.current ? data : null;
+        connectionFailures = 0;
 
         // Optional: if you want to know which ones were city-fallback
         // track.coordsAccuracy = coords.accuracy;
 
       } catch (e) {
         results[key] = null;
+        failed++;
+        lastKind = e.name === "AbortError" ? "timeout" : "network";
+        // Two in a row means the service (or the connection) is down, don't wait 10s for each track
+        if (++connectionFailures >= 2) stopKind = lastKind;
       }
     }
 
@@ -214,8 +274,34 @@
 
     weatherData.value = results;
     hasValidWeather.value = Object.values(results).some((d) => d && d.current);
+    weatherError.value = failed
+        ? {
+          kind: stopKind ?? lastKind,
+          failed: tracks.value.filter((track) => !results[track.raceName.toLowerCase().replace(/\s+/g, "-")]).length,
+          total: tracks.value.length,
+        }
+        : null;
     isLoading.value = false;
   };
+
+  // Retry only the tracks that failed, to spare API calls
+  const isRetrying = ref(false);
+  const showWithoutWeather = ref(false);
+  const bannerDismissed = ref(false);
+
+  async function retryWeather() {
+    isRetrying.value = true;
+    bannerDismissed.value = false;
+    await fetchAllWeather({ onlyMissing: true });
+    isRetrying.value = false;
+  }
+
+  const showErrorScreen = computed(
+      () => !isLoading.value && !hasValidWeather.value && !showWithoutWeather.value
+  );
+  const showPitWall = computed(
+      () => !isLoading.value && (hasValidWeather.value || showWithoutWeather.value)
+  );
 
 
   // Find next race index
@@ -420,14 +506,25 @@
 
 <template>
   <!-- Loader: start lights -->
-  <div v-if="isLoading || !hasValidWeather" class="preloader">
+  <div v-if="isLoading" class="preloader">
     <div class="start-lights">
       <span v-for="i in 5" :key="i" :style="{ animationDelay: `${(i - 1) * 0.32}s` }"></span>
     </div>
     <div class="label preloader-text">LOOKING OUTSIDE FOR YOU... ONE SEC</div>
   </div>
 
-	<div v-if="!isLoading && hasValidWeather" class="pit-wall">
+  <!-- Nothing loaded at all: red flag screen -->
+  <WeatherError
+      v-else-if="showErrorScreen"
+      :kind="weatherError?.kind"
+      :failed="weatherError?.failed"
+      :total="weatherError?.total"
+      :retrying="isRetrying"
+      @retry="retryWeather"
+      @continue="showWithoutWeather = true"
+  />
+
+	<div v-if="showPitWall" class="pit-wall">
 		<Swiper
 			:slides-per-view="1"
 			:initial-slide="trackIndex"
@@ -438,6 +535,7 @@
 		>
 			<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
 				<TrackWeather
+					:key="track.weather ? 'weather' : 'no-weather'"
 					:track="track"
 					:total-rounds="totalRounds"
 					:is-mobile-device="isMobileDevice"
@@ -462,6 +560,29 @@
 				:class="{ moving: isMoving, reversing: isReversing }"
 				:style="{ left: racecarLeft }"
 			></div>
+		</div>
+
+		<!-- Some (or all, if the user carried on) tracks have no weather -->
+		<div
+			v-if="weatherError && !bannerDismissed"
+			class="weather-banner"
+			:class="{ red: !hasValidWeather }"
+			role="status"
+		>
+			<span class="label weather-banner-flag">
+				<i class="fa-solid fa-flag"></i>{{ hasValidWeather ? "YELLOW FLAG" : "RED FLAG" }}
+			</span>
+			<span class="label weather-banner-text">
+				<template v-if="weatherError.kind === 'quota'">Out of weather data for today · </template>
+				<template v-else-if="weatherError.kind === 'timeout' || weatherError.kind === 'network'">Weather service not responding · </template>
+				Weather missing for {{ weatherError.failed }} of {{ weatherError.total }} races
+			</span>
+			<button class="label weather-banner-btn" :disabled="isRetrying" @click="retryWeather">
+				<i class="fa-solid fa-rotate-right" :class="{ 'fa-spin': isRetrying }"></i>{{ isRetrying ? "RETRYING…" : "RETRY" }}
+			</button>
+			<button class="weather-banner-close" aria-label="Dismiss" @click="bannerDismissed = true">
+				<i class="fa-solid fa-xmark"></i>
+			</button>
 		</div>
 
 		<!-- Desktop: side arrows -->
@@ -711,8 +832,92 @@
 		color: #fff;
 	}
 
+	/* Missing weather banner */
+	.weather-banner {
+		--flag: #ffd60a;
+		--flag-ink: #111111;
+		position: absolute;
+		top: 40px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 3;
+		width: max-content;
+		max-width: calc(100% - 32px);
+		display: flex;
+		align-items: center;
+		background: rgba(8, 8, 10, 0.92);
+		border: 1px solid var(--flag);
+		color: #fff;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+	}
+
+	.weather-banner.red {
+		--flag: #e5262b;
+		--flag-ink: #ffffff;
+	}
+
+	.weather-banner-flag {
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		background: var(--flag);
+		color: var(--flag-ink);
+		font-size: 11px;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.weather-banner-text {
+		padding: 8px 14px;
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		line-height: 1.5;
+	}
+
+	.weather-banner-btn,
+	.weather-banner-close {
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 0 12px;
+		background: transparent;
+		border: 0;
+		border-left: 1px solid rgba(255, 255, 255, 0.16);
+		color: #fff;
+		font-size: 11px;
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.weather-banner-btn:hover:not(:disabled),
+	.weather-banner-close:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.weather-banner-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
 	/* Mobile view */
 	@media (max-width: 768px) {
+		.weather-banner {
+			top: 36px;
+		}
+
+		.weather-banner-flag {
+			font-size: 0;
+			gap: 0;
+		}
+
+		.weather-banner-flag i {
+			font-size: 12px;
+		}
+
 		.swiper-slide {
 			padding: 44px 16px 96px;
 		}
