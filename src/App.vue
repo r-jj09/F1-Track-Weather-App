@@ -309,6 +309,42 @@
 		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 	}
 
+	// Raise the lightness (keeping hue and saturation) until the color stands out on the dark background
+	function lighten(hex, minLuminance = 0.12) {
+		if (luminance(hex) >= minLuminance) return hex;
+
+		const n = hex.replace("#", "");
+		const [r, g, b] = [0, 2, 4].map((i) => parseInt(n.substr(i, 2), 16) / 255);
+		const max = Math.max(r, g, b);
+		const min = Math.min(r, g, b);
+		const d = max - min;
+		let h = 0;
+		if (d) {
+			if (max === r) h = ((g - b) / d) % 6;
+			else if (max === g) h = (b - r) / d + 2;
+			else h = (r - g) / d + 4;
+		}
+		h = (h * 60 + 360) % 360;
+		const l0 = (max + min) / 2;
+		const sat = d ? d / (1 - Math.abs(2 * l0 - 1)) : 0;
+
+		const toHex = (l) => {
+			const c = (1 - Math.abs(2 * l - 1)) * sat;
+			const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+			const m = l - c / 2;
+			const [r1, g1, b1] =
+				h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] :
+				h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+			return "#" + [r1, g1, b1].map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("");
+		};
+
+		for (let l = l0; l <= 1; l += 0.02) {
+			const candidate = toHex(l);
+			if (luminance(candidate) >= minLuminance) return candidate;
+		}
+		return "#ffffff";
+	}
+
 	watch(
 		() => randomTeamEntry.value.color,
 		(newColor) => {
@@ -319,6 +355,8 @@
 			root.setProperty("--team-text", L > 0.12 ? newColor : "#ffffff");
 			// Text placed on top of a team-colored background
 			root.setProperty("--team-ink", L > 0.4 ? "#0e0e0e" : "#ffffff");
+			// Glowing elements (start lights): lightened team color instead of plain white
+			root.setProperty("--team-glow", lighten(newColor));
 		},
 		{ immediate: true }
 	);
@@ -395,6 +433,7 @@
 		--team-color: #ff0000; /* Default color */
 		--team-text: #ff0000;
 		--team-ink: #ffffff;
+		--team-glow: #ff0000;
 		--panel-bg: rgba(8, 8, 10, 0.9);
 		--cell-bg: #0b0b0d;
 		--label-font: "JetBrains Mono", monospace;
@@ -433,7 +472,7 @@
 
 	@keyframes lightOn {
 		0%, 6% { background: #26262a; box-shadow: none; }
-		10%, 78% { background: var(--team-color); box-shadow: 0 0 22px var(--team-color); }
+		10%, 78% { background: var(--team-glow); box-shadow: 0 0 22px var(--team-glow); }
 		82%, 100% { background: #26262a; box-shadow: none; }
 	}
 
