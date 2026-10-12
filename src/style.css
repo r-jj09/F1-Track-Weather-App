@@ -3,23 +3,19 @@
     src: url('/src/assets/Formula1-Regular.ttf');
 }
 
-* {
-    font-family: "F1-Regular", sans-serif;
-    font-weight: 700;
-    font-style: normal;
-}
-
 body {
+    font-family: "F1-Regular", sans-serif;
+    font-weight: 400;
+    font-style: normal;
     background-color: #0e0e0e;
     margin: 0;
     padding: 0;
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
+}
+
+button {
+    font: inherit;
 }
 
 .swiper{
-    background-image: url("/F1_track_weather_app_background.png");
-    background-position: center;
-    background-size: cover;
+    background: #000 url("/F1_track_weather_app_background.webp") center / cover no-repeat;
 }
