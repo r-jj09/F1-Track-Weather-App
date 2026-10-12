@@ -1,7 +1,6 @@
 import { createApp } from "vue";
 import App from "./App.vue";
 import "./style.css";
-import "./loader.css";
 
 const favicon = document.getElementById("favicon");
 

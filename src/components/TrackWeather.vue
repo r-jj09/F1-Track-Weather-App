@@ -5,6 +5,7 @@
 
 	const props = defineProps({
 		track: Object,
+		totalRounds: Number,
 		isMobileDevice: Boolean,
 	});
 
@@ -16,14 +17,14 @@
 		const uvi = track.weather?.current?.uvi;
 		if (uvi === undefined || uvi === null) return null;
 
-		if (uvi <= 2) return { label: "Low", color: "green", textColor: "white" };
+		if (uvi <= 2) return { label: "Low", color: "#2FB45A", textColor: "#111111" };
 		if (uvi <= 5)
-			return { label: "Moderate", color: "yellow", textColor: "black" };
-		if (uvi <= 7) return { label: "High", color: "orange", textColor: "white" };
+			return { label: "Moderate", color: "#FFD60A", textColor: "#111111" };
+		if (uvi <= 7) return { label: "High", color: "#FF8A1F", textColor: "#111111" };
 		if (uvi <= 10)
-			return { label: "Very High", color: "red", textColor: "white" };
+			return { label: "Very High", color: "#E5262B", textColor: "#ffffff" };
 
-		return { label: "Extreme", color: "purple", textColor: "white" };
+		return { label: "Extreme", color: "#8E3BD9", textColor: "#ffffff" };
 	});
 
 	// Is it Race Day?
@@ -44,6 +45,11 @@
 		return raceDateOnly.getTime() === todayDateOnly.getTime();
 	});
 
+	// Already raced this season
+	const isPastRace = computed(
+		() => !isRaceDay.value && new Date(track.date) < new Date()
+	);
+
 	// Race Day Forecast logic
 	const raceDayForecast = computed(() => {
 		const forecastArray = track.weather?.daily;
@@ -56,6 +62,13 @@
 				return forecastDate.toDateString() === raceDate.toDateString();
 			}) || null
 		);
+	});
+
+	const formattedDate = new Date(track.date).toLocaleDateString("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "short",
+		day: "numeric",
 	});
 
 	// Format local time
@@ -133,7 +146,7 @@
 		if (card.value && !isMobileDevice.value) {
 			VanillaTilt.init(card.value, {
 				reverse: false,
-				max: 5,
+				max: 3,
 				speed: 300,
 			});
 
@@ -149,189 +162,336 @@
 </script>
 
 <template>
-	<div class="track-card" ref="card">
-		<div class="track-title-uv">
-			<div v-if="isRaceDay">
-				<p class="nextRace-text">Race Day</p>
-			</div>
-			<div v-else-if="track.isNext">
-				<p class="nextRace-text">Up Next</p>
-			</div>
-			<p
-				v-if="uvLevel"
-				class="uv-badge"
-				:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
-			>
-				<span>UV Index: </span
-				><span :style="{ fontWeight: 'bold' }">{{ uvLevel.label }}</span>
-			</p>
-
-			<h2 class="italic-text">{{ track.raceName }}</h2>
+	<div class="track-card" :class="{ finished: isPastRace }" ref="card">
+		<div
+			v-if="uvLevel"
+			class="label uv-badge"
+			:style="{ backgroundColor: uvLevel.color, color: uvLevel.textColor }"
+		>
+			<span>UV INDEX</span><span>{{ uvLevel.label.toUpperCase() }}</span>
 		</div>
 
-		<h2 class="italic-text">
-			{{
-				new Date(track.date).toLocaleDateString("en-US", {
-					weekday: "long",
-					year: "numeric",
-					month: "short",
-					day: "numeric",
-				})
-			}}
-		</h2>
-		<p class="italic-text">
-			{{ track.Circuit.circuitName }}, {{ track.Circuit.Location.locality }} ,
-			{{ track.Circuit.Location.country }}
-		</p>
-		<div class="weather-text" v-if="track.weather">
-			<p>Local Time: {{ formattedTime }}</p>
-			<div
-				style="
-					display: flex;
-					flex-direction: row;
-					align-items: center;
-					justify-content: center;
-				"
-			>
-				<p class="weather-temp" style="font-size: 29px">
-					{{ Math.round(track.weather.current.temp) }}°C
-				</p>
-				<div
-					style="
-						display: flex;
-						align-items: center;
-						justify-content: center;
-						flex-direction: column;
-					"
-				>
-					<canvas
-						class="weather-icon"
-						:id="iconId"
-						width="70"
-						height="70"
-						color="white"
-					></canvas>
-					<!-- <p style="font-size: 10px">
-						{{ track.weather.current.weather[0].description }}
-					</p> -->
+		<div class="label status-row">
+			<div v-if="isRaceDay" class="status-chip">RACE DAY</div>
+			<div v-else-if="track.isNext" class="status-chip">UP NEXT</div>
+			<div v-else-if="isPastRace" class="status-chip finished-chip">
+				<i class="fa-solid fa-flag-checkered"></i>FINISHED
+			</div>
+			<div class="round">ROUND {{ track.round }}/{{ totalRounds }}</div>
+		</div>
+
+		<div class="title-block">
+			<h2 class="race-name">{{ track.raceName }}</h2>
+			<div class="label race-meta">
+				{{ formattedDate }} · {{ track.Circuit.circuitName }},
+				{{ track.Circuit.Location.locality }}, {{ track.Circuit.Location.country }}
+			</div>
+		</div>
+
+		<template v-if="track.weather">
+			<div class="section">
+				<div class="label section-title">
+					<span class="section-dot"></span>NOW AT CIRCUIT
+					<span class="local-time">LOCAL {{ formattedTime }}</span>
+				</div>
+
+				<div class="weather-grid">
+					<div class="hero-cell">
+						<div class="label cell-label">TEMP</div>
+						<div class="hero-value">
+							{{ Math.round(track.weather.current.temp) }}<span class="unit">°C</span>
+						</div>
+					</div>
+					<div class="hero-cell condition-cell">
+						<div class="label cell-label">CONDITION</div>
+						<div class="condition">
+							<canvas
+								class="weather-icon"
+								:id="iconId"
+								width="70"
+								height="70"
+							></canvas>
+							<span>{{ track.weather.current.weather[0].description }}</span>
+						</div>
+					</div>
+					<div class="stats-row">
+						<div class="stat-cell">
+							<span class="label cell-label">HUMIDITY</span>
+							<span class="stat-value">{{ track.weather.current.humidity }}%</span>
+						</div>
+						<div class="stat-cell">
+							<span class="label cell-label">CLOUDS</span>
+							<span class="stat-value">{{ track.weather.current.clouds }}%</span>
+						</div>
+						<div v-if="track.weather.current.rain" class="stat-cell">
+							<span class="label cell-label">RAIN (1H)</span>
+							<span class="stat-value rain">{{ track.weather.current.rain["1h"] }} mm</span>
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<p>Humidity: {{ track.weather.current.humidity }}%</p>
-			<p>Clouds: {{ track.weather.current.clouds }}%</p>
-			<p v-if="track.weather.current.rain">
-				Chance of Rain (1h): {{ track.weather.current.rain["1h"] }} mm
-			</p>
-			<div v-if="raceDayForecast && !isRaceDay" class="race-forecast">
-				<p>Race Day Temp: {{ Math.round(raceDayForecast.temp.day) }}°C</p>
-				<p>Race Day Condition: {{ raceDayForecast.weather[0].description }}</p>
-				<p>Chance of Rain: {{ Math.round(raceDayForecast.pop * 100) }}%</p>
+			<div v-if="raceDayForecast && !isRaceDay" class="section">
+				<div class="label section-title muted">RACE DAY FORECAST</div>
+				<div class="stats-row forecast-row">
+					<div class="stat-cell">
+						<span class="label cell-label">TEMP</span>
+						<span class="stat-value">{{ Math.round(raceDayForecast.temp.day) }}°C</span>
+					</div>
+					<div class="stat-cell">
+						<span class="label cell-label">CHANCE OF RAIN</span>
+						<span class="stat-value rain">{{ Math.round(raceDayForecast.pop * 100) }}%</span>
+					</div>
+					<div class="stat-cell wide">
+						<span class="label cell-label">CONDITION</span>
+						<span class="stat-value capitalize">{{ raceDayForecast.weather[0].description }}</span>
+					</div>
+				</div>
 			</div>
-			<div v-else-if="isRaceDay">
-				<p class="forecast-unavailable">
-					Race day forecast is not available yet.
-				</p>
+			<div v-else-if="isRaceDay" class="forecast-unavailable">
+				Race day forecast is not available yet.
 			</div>
-		</div>
-		<div v-else>
-			<p>Loading weather...</p>
-		</div>
+		</template>
+		<div v-else class="forecast-unavailable">Loading weather...</div>
 	</div>
 </template>
 
 <style scoped>
 	.track-card {
+		position: relative;
+		width: 100%;
+		max-width: 880px;
+		margin: auto;
+		box-sizing: border-box;
+		background: var(--panel-bg);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		border-top: 6px solid var(--team-color);
+		padding: clamp(18px, 3vw, 36px);
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		height: 80%;
-		background-color: hsla(336, 100%, 50%, 0.5);
-		border-radius: 35px;
-		padding: 20px;
-		box-shadow: 0 0 8px 5px rgba(255, 255, 255, 0.863);
-		text-align: center;
-		width: 50%;
-		margin: auto;
-		/* border: 5px solid #cb007b; */
-		color: #ffff;
+		gap: clamp(14px, 2.2vw, 26px);
+		color: #fff;
+		text-align: left;
 	}
 
-	.track-title-uv {
-		position: relative;
+	/* Finished races: chequered flag stripe instead of the team color */
+	.track-card.finished {
+		border-top: 1px solid rgba(255, 255, 255, 0.14);
+		padding-top: calc(clamp(18px, 3vw, 36px) + 12px);
+	}
+
+	.track-card.finished::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 12px;
+		background-color: #fff;
+		background-image: conic-gradient(#000 25%, transparent 0 50%, #000 0 75%, transparent 0);
+		background-size: 12px 12px;
 	}
 
 	.uv-badge {
-    top: -40px;
-    right: -60px;
 		position: absolute;
-		color: white;
-		border-radius: 15px;
-		padding: 5px 10px;
-		margin-top: 10px;
-		display: inline-block;
+		top: -20px;
+		right: -10px;
 		transform: rotate(15deg);
-	}
-
-	.nextRace-text {
-		text-transform: uppercase;
-		font-size: 22px !important;
-		color: #ff0267;
-		text-shadow: #ffffff 2px 2px 1px;
+		font-size: 13px;
 		font-weight: 700;
-    margin-top: 0;
+		letter-spacing: 0.06em;
+		padding: 8px 14px;
+		border-radius: 4px;
+		display: flex;
+		gap: 8px;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+		z-index: 1;
 	}
 
-	.italic-text {
+	.status-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 14px;
+		font-size: 12px;
+	}
+
+	.status-chip {
+		background: var(--team-color);
+		color: var(--team-ink);
+		padding: 6px 12px;
+		transform: skewX(-12deg);
+		font-weight: 700;
+	}
+
+	.status-chip.finished-chip {
+		background: #fff;
+		color: #0e0e0e;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.round {
+		color: rgba(255, 255, 255, 0.7);
+	}
+
+	.title-block,
+	.section {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.race-name {
+		margin: 0;
+		font-size: clamp(28px, 4.6vw, 58px);
+		line-height: 1;
 		font-style: italic;
+		font-weight: 400;
+		text-transform: uppercase;
+		text-wrap: balance;
 	}
 
-	.weather-text p,
-	.race-forecast p,
-	.italic-text {
-		text-shadow: 1px 1px 2px #000000 !important;
+	.race-meta {
+		font-size: 13px;
+		line-height: 1.6;
+		letter-spacing: normal;
+		color: rgba(255, 255, 255, 0.72);
+		text-wrap: pretty;
 	}
 
-	.race-forecast p {
-		font-size: 17px;
-		font-weight: 900;
-		color: #cb007b;
-		text-shadow: 1px 1px 2px #ffffff !important;
+	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+		color: rgba(255, 255, 255, 0.8);
+	}
+
+	.section-title.muted {
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.section-dot {
+		width: 8px;
+		height: 8px;
+		background: var(--team-color);
+		outline: 1px solid rgba(255, 255, 255, 0.4);
+	}
+
+	.local-time {
+		margin-left: auto;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.weather-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1px;
+		background: rgba(255, 255, 255, 0.16);
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		overflow: hidden;
+	}
+
+	.hero-cell {
+		background: var(--cell-bg);
+		padding: 16px 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.cell-label {
+		font-size: 11px;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.hero-value {
+		font-size: clamp(52px, 7.6vw, 96px);
+		line-height: 0.95;
+	}
+
+	.unit {
+		font-size: 0.4em;
+	}
+
+	.condition-cell {
+		justify-content: space-between;
+	}
+
+	.condition {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-size: 20px;
+		line-height: 1.15;
+		text-transform: capitalize;
 	}
 
 	.weather-icon {
-		padding: 10px;
-		display: flex;
+		width: clamp(44px, 5vw, 64px);
+		height: clamp(44px, 5vw, 64px);
+		flex-shrink: 0;
 	}
 
-	/* Mobile view */
+	.stats-row {
+		grid-column: 1 / -1;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+		gap: 1px;
+	}
+
+	.forecast-row {
+		background: rgba(255, 255, 255, 0.12);
+		overflow: hidden;
+	}
+
+	.stat-cell {
+		background: var(--cell-bg);
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.stat-cell.wide {
+		grid-column: span 2;
+	}
+
+	.stat-value {
+		font-size: 20px;
+	}
+
+	.stat-value.rain {
+		color: var(--team-text);
+	}
+
+	.capitalize {
+		text-transform: capitalize;
+	}
+
+	.forecast-unavailable {
+		border: 1px dashed rgba(255, 255, 255, 0.3);
+		padding: 18px;
+		font-size: 18px;
+		color: rgba(255, 255, 255, 0.85);
+	}
 
 	@media (max-width: 768px) {
-		.track-card {
-			height: 80%;
-			width: 80%;
-			padding: 10px;
+		.weather-grid {
+			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.italic-text,
-		.weather-text p {
-			font-size: 16px;
-		}
-		.uv-badge {
-			font-size: 14px !important;
+		.condition {
+			font-size: 18px;
 		}
 
-		.weather-temp {
-			font-size: 24px !important;
-		}
-
-		.nextRace-text {
-			font-size: 20px !important;
-		}
-
-		.weather-icon {
-			width: 50px;
-			height: 50px;
+		.stat-cell.wide {
+			grid-column: 1 / -1;
 		}
 	}
 </style>

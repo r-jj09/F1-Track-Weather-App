@@ -3,8 +3,7 @@
   import { Swiper, SwiperSlide } from "swiper/vue";
 	import "swiper/css";
 	import "swiper/css/pagination";
-	import "swiper/css/navigation";
-	import { Pagination, Navigation } from "swiper/modules";
+	import { Pagination } from "swiper/modules";
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
 	const currentYear = new Date().getFullYear();
@@ -20,6 +19,7 @@
   const isOffSeason = ref(false);
 
 	const swiperInstance = ref(null);
+	const activeIndex = ref(0);
 
 	const apiUrl = `https://api.jolpi.ca/ergast/f1/${currentYear}/races.json`;
 
@@ -212,11 +212,12 @@
 		})
 	);
 
-	// Swiper pagination
-	const pagination = computed(() => ({
-		type: isMobileDevice.value ? "fraction" : "progressbar",
-		clickable: true,
-	}));
+	const totalRounds = computed(() => tracksWithNextIndicator.value.length);
+
+	// Swiper pagination (checkered progress bar on every screen size)
+	const pagination = {
+		type: "progressbar",
+	};
 
 	const isMobileDevice = ref(false);
 	onMounted(() => {
@@ -226,37 +227,33 @@
 
 	const racecarLeft = ref("0%");
 
-	function updateRacecarPosition(activeIndex) {
-		const total = tracksWithNextIndicator.value.length;
+	function updateRacecarPosition(index) {
+		const total = totalRounds.value;
 		if (total <= 1) {
 			racecarLeft.value = "0%";
 			return;
 		}
-		const percent = (activeIndex / (total - 1)) * 100;
+		const percent = (index / (total - 1)) * 100;
 		racecarLeft.value = `calc(${percent}% - 30px)`;
 	}
 
 	// Watch for Swiper slide changes
 	function onSwiper(swiper) {
 		swiperInstance.value = swiper;
+		activeIndex.value = swiper.activeIndex;
 		updateRacecarPosition(swiper.activeIndex);
 		swiper.on("slideChange", () => {
+			activeIndex.value = swiper.activeIndex;
 			updateRacecarPosition(swiper.activeIndex);
 		});
 	}
 
+	const slidePrev = () => swiperInstance.value?.slidePrev();
+	const slideNext = () => swiperInstance.value?.slideNext();
+
 	watch(trackIndex, (idx) => {
 		updateRacecarPosition(idx);
 	});
-
-	/*watch(isLoading, (val) => {
-		if (val) {
-			document.body.style.backgroundColor = "#3434a3"; // Fallback background while loading
-		} else {
-			document.body.style.backgroundImage =
-				"url('/F1_track_weather_app_background.png')";
-		}
-	});*/
 
 	onMounted(async () => {
 		await fetchTracks();
@@ -298,164 +295,158 @@
 		return { team, color };
 	});
 
-	// console.log("Random Team Entry:", randomTeamEntry.value.color);
-	// console.log("Random Team Entry:", randomTeamEntry.value.team);
+	// Relative luminance, used to keep team-colored text and chips readable
+	function luminance(hex) {
+		const n = hex.replace("#", "");
+		const [r, g, b] = [0, 2, 4]
+			.map((i) => parseInt(n.substr(i, 2), 16) / 255)
+			.map((v) =>
+				v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+			);
+		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	}
 
 	watch(
 		() => randomTeamEntry.value.color,
 		(newColor) => {
-			document.documentElement.style.setProperty("--team-color", newColor);
+			const L = luminance(newColor);
+			const root = document.documentElement.style;
+			root.setProperty("--team-color", newColor);
+			// Dark team colors (Red Bull, Cadillac...) fall back to white for text on dark panels
+			root.setProperty("--team-text", L > 0.12 ? newColor : "#ffffff");
+			// Text placed on top of a team-colored background
+			root.setProperty("--team-ink", L > 0.4 ? "#0e0e0e" : "#ffffff");
 		},
 		{ immediate: true }
 	);
 </script>
 
 <template>
-  <div
-      v-if="isLoading || !hasValidWeather"
-      class="preloader"
-      style="
-        opacity: 1;
-        z-index: 11;
-        position: fixed;"
-  >
-    <svg
-        version="1.1"
-        id="sun"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
-        x="0px"
-        y="0px"
-        width="10px"
-        height="10px"
-        viewBox="0 0 10 10"
-        enable-background="new 0 0 10 10"
-        xml:space="preserve"
-        style="opacity: 1; margin-left: 0px; margin-top: 0px"
-    >
-			<g>
-				<path
-            fill="none"
-            d="M6.942,3.876c-0.4-0.692-1.146-1.123-1.946-1.123c-0.392,0-0.779,0.104-1.121,0.301c-1.072,0.619-1.44,1.994-0.821,3.067C3.454,6.815,4.2,7.245,5,7.245c0.392,0,0.779-0.104,1.121-0.301C6.64,6.644,7.013,6.159,7.167,5.581C7.321,5,7.243,4.396,6.942,3.876z M6.88,5.505C6.745,6.007,6.423,6.427,5.973,6.688C5.676,6.858,5.34,6.948,5,6.948c-0.695,0-1.343-0.373-1.69-0.975C2.774,5.043,3.093,3.849,4.024,3.312C4.32,3.14,4.656,3.05,4.996,3.05c0.695,0,1.342,0.374,1.69,0.975C6.946,4.476,7.015,5,6.88,5.505z"
-        ></path>
-        <path
-            fill="none"
-            d="M8.759,2.828C8.718,2.757,8.626,2.732,8.556,2.774L7.345,3.473c-0.07,0.041-0.094,0.132-0.053,0.202C7.319,3.723,7.368,3.75,7.419,3.75c0.025,0,0.053-0.007,0.074-0.02l1.211-0.699C8.774,2.989,8.8,2.899,8.759,2.828z"
-        ></path>
-        <path
-            fill="none"
-            d="M1.238,7.171c0.027,0.047,0.077,0.074,0.128,0.074c0.025,0,0.051-0.008,0.074-0.02l1.211-0.699c0.071-0.041,0.095-0.133,0.054-0.203S2.574,6.228,2.503,6.269l-1.21,0.699C1.221,7.009,1.197,7.101,1.238,7.171z"
-        ></path>
-        <path
-            fill="none"
-            d="M6.396,2.726c0.052,0,0.102-0.026,0.13-0.075l0.349-0.605C6.915,1.976,6.89,1.885,6.819,1.844c-0.07-0.042-0.162-0.017-0.202,0.054L6.269,2.503C6.228,2.574,6.251,2.666,6.322,2.706C6.346,2.719,6.371,2.726,6.396,2.726z"
-        ></path>
-        <path
-            fill="none"
-            d="M3.472,7.347L3.123,7.952c-0.041,0.07-0.017,0.162,0.054,0.203C3.2,8.169,3.226,8.175,3.25,8.175c0.052,0,0.102-0.027,0.129-0.074l0.349-0.605c0.041-0.07,0.017-0.16-0.054-0.203C3.603,7.251,3.513,7.276,3.472,7.347z"
-        ></path>
-        <path
-            fill="none"
-            d="M3.601,2.726c0.025,0,0.051-0.007,0.074-0.02C3.746,2.666,3.77,2.574,3.729,2.503l-0.35-0.604C3.338,1.828,3.248,1.804,3.177,1.844C3.106,1.886,3.082,1.976,3.123,2.047l0.35,0.604C3.5,2.7,3.549,2.726,3.601,2.726z"
-        ></path>
-        <path
-            fill="none"
-            d="M6.321,7.292c-0.07,0.043-0.094,0.133-0.054,0.203l0.351,0.605c0.026,0.047,0.076,0.074,0.127,0.074c0.025,0,0.051-0.006,0.074-0.02c0.072-0.041,0.096-0.133,0.055-0.203l-0.35-0.605C6.483,7.276,6.393,7.253,6.321,7.292z"
-        ></path>
-        <path
-            fill="none"
-            d="M2.202,5.146c0.082,0,0.149-0.065,0.149-0.147S2.284,4.851,2.202,4.851H1.503c-0.082,0-0.148,0.066-0.148,0.148s0.066,0.147,0.148,0.147H2.202z"
-        ></path>
-        <path
-            fill="none"
-            d="M8.493,4.851H7.794c-0.082,0-0.148,0.066-0.148,0.148s0.066,0.147,0.148,0.147l0,0h0.699c0.082,0,0.148-0.065,0.148-0.147S8.575,4.851,8.493,4.851L8.493,4.851z"
-        ></path>
-        <path
-            fill="none"
-            d="M5.146,2.203V0.805c0-0.082-0.066-0.148-0.148-0.148c-0.082,0-0.148,0.066-0.148,0.148v1.398c0,0.082,0.066,0.149,0.148,0.149C5.08,2.352,5.146,2.285,5.146,2.203z"
-        ></path>
-        <path
-            fill="none"
-            d="M4.85,7.796v1.396c0,0.082,0.066,0.15,0.148,0.15c0.082,0,0.148-0.068,0.148-0.15V7.796c0-0.082-0.066-0.148-0.148-0.148C4.917,7.647,4.85,7.714,4.85,7.796z"
-        ></path>
-        <path
-            fill="none"
-            d="M2.651,3.473L1.44,2.774C1.369,2.732,1.279,2.757,1.238,2.828C1.197,2.899,1.221,2.989,1.292,3.031l1.21,0.699c0.023,0.013,0.049,0.02,0.074,0.02c0.051,0,0.101-0.026,0.129-0.075C2.747,3.604,2.722,3.514,2.651,3.473z"
-        ></path>
-        <path
-            fill="none"
-            d="M8.704,6.968L7.493,6.269c-0.07-0.041-0.162-0.016-0.201,0.055c-0.041,0.07-0.018,0.162,0.053,0.203l1.211,0.699c0.023,0.012,0.049,0.02,0.074,0.02c0.051,0,0.102-0.027,0.129-0.074C8.8,7.101,8.776,7.009,8.704,6.968z"
-        ></path>
-			</g>
-		</svg>
-
-    <svg
-        version="1.1"
-        id="cloud"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
-        x="0px"
-        y="0px"
-        width="10px"
-        height="10px"
-        viewBox="0 0 10 10"
-        enable-background="new 0 0 10 10"
-        xml:space="preserve"
-    >
-			<path
-          fill="none"
-          d="M8.528,5.624H8.247c-0.085,0-0.156-0.068-0.156-0.154c0-0.694-0.563-1.257-1.257-1.257c-0.098,0-0.197,0.013-0.3,0.038C6.493,4.259,6.45,4.252,6.415,4.229C6.38,4.208,6.356,4.172,6.348,4.131C6.117,3.032,5.135,2.235,4.01,2.235c-1.252,0-2.297,0.979-2.379,2.23c-0.004,0.056-0.039,0.108-0.093,0.13C1.076,4.793,0.776,5.249,0.776,5.752c0,0.693,0.564,1.257,1.257,1.257h6.495c0.383,0,0.695-0.31,0.695-0.692S8.911,5.624,8.528,5.624z"
-      ></path>
-		</svg>
-
-    <div class="rain">
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
-      <span class="drop"></span>
+  <!-- Loader: start lights -->
+  <div v-if="isLoading || !hasValidWeather" class="preloader">
+    <div class="start-lights">
+      <span v-for="i in 5" :key="i" :style="{ animationDelay: `${(i - 1) * 0.32}s` }"></span>
     </div>
-
-    <div class="text">LOOKING OUTSIDE FOR YOU... ONE SEC</div>
+    <div class="label preloader-text">LOOKING OUTSIDE FOR YOU... ONE SEC</div>
   </div>
 
-	<Swiper
-		v-if="!isLoading && hasValidWeather"
-		:modules="[Pagination, Navigation]"
-		:slides-per-view="1"
-		:initial-slide="trackIndex"
-		:space-between="0"
-		:grab-cursor="true"
-		:pagination="pagination"
-		:navigation="true"
-		class="full-screen-swiper"
-		@swiper="onSwiper"
-	>
-		<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
-			<TrackWeather :track="track" :is-mobile-device="isMobileDevice" />
-		</SwiperSlide>
-	</Swiper>
+	<div v-if="!isLoading && hasValidWeather" class="pit-wall">
+		<Swiper
+			:modules="[Pagination]"
+			:slides-per-view="1"
+			:initial-slide="trackIndex"
+			:space-between="0"
+			:grab-cursor="true"
+			:pagination="pagination"
+			class="full-screen-swiper"
+			@swiper="onSwiper"
+		>
+			<SwiperSlide v-for="(track, index) in tracksWithNextIndicator" :key="index">
+				<TrackWeather
+					:track="track"
+					:total-rounds="totalRounds"
+					:is-mobile-device="isMobileDevice"
+				/>
+			</SwiperSlide>
+		</Swiper>
+
+		<div class="racecar-marker" :style="{ left: racecarLeft }"></div>
+
+		<!-- Desktop: side arrows -->
+		<button
+			class="nav-btn nav-side nav-side-prev"
+			aria-label="Previous race"
+			:disabled="activeIndex === 0"
+			@click="slidePrev"
+		><i class="fa-solid fa-chevron-left"></i></button>
+		<button
+			class="nav-btn nav-side nav-side-next"
+			aria-label="Next race"
+			:disabled="activeIndex === totalRounds - 1"
+			@click="slideNext"
+		><i class="fa-solid fa-chevron-right"></i></button>
+
+		<!-- Mobile: bottom bar with round counter -->
+		<div class="nav-bottom">
+			<button
+				class="nav-btn"
+				aria-label="Previous race"
+				:disabled="activeIndex === 0"
+				@click="slidePrev"
+			><i class="fa-solid fa-chevron-left"></i></button>
+			<div class="label nav-count">{{ activeIndex + 1 }} / {{ totalRounds }}</div>
+			<button
+				class="nav-btn"
+				aria-label="Next race"
+				:disabled="activeIndex === totalRounds - 1"
+				@click="slideNext"
+			><i class="fa-solid fa-chevron-right"></i></button>
+		</div>
+	</div>
 
   <OffSeason v-if="isOffSeason"></OffSeason>
-	<div
-      v-if="!isMobileDevice && !isLoading && hasValidWeather"
-		id="racecar"
-		class="racecar-marker"
-		:style="{ left: racecarLeft }"
-	></div>
-	<!-- ! Loading Animation by https://codepen.io/tholman/pen/AvWXMr -->
-
 </template>
 
 <style>
 	:root {
 		--team-color: #ff0000; /* Default color */
+		--team-text: #ff0000;
+		--team-ink: #ffffff;
+		--panel-bg: rgba(8, 8, 10, 0.9);
+		--cell-bg: #0b0b0d;
+		--label-font: "JetBrains Mono", monospace;
 	}
+
+	.label {
+		font-family: var(--label-font);
+		letter-spacing: 0.14em;
+	}
+
+	/* Loader */
+	.preloader {
+		position: fixed;
+		inset: 0;
+		z-index: 11;
+		background: #0e0e0e;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 32px;
+	}
+
+	.start-lights {
+		display: flex;
+		gap: 14px;
+	}
+
+	.start-lights span {
+		width: 30px;
+		height: 30px;
+		border-radius: 999px;
+		background: #26262a;
+		animation: lightOn 2.6s infinite;
+	}
+
+	@keyframes lightOn {
+		0%, 6% { background: #26262a; box-shadow: none; }
+		10%, 78% { background: var(--team-color); box-shadow: 0 0 22px var(--team-color); }
+		82%, 100% { background: #26262a; box-shadow: none; }
+	}
+
+	.preloader-text {
+		font-size: 13px;
+		color: #fff;
+		text-align: center;
+		max-width: 240px;
+		line-height: 1.7;
+	}
+
+	/* Pit wall */
+	.pit-wall {
+		position: relative;
+	}
+
 	.full-screen-swiper {
 		width: 100%;
 		height: 100dvh;
@@ -466,11 +457,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	.swiper-button-next,
-	.swiper-button-prev {
-		color: #fff;
+		box-sizing: border-box;
+		padding: 44px 96px 48px;
+		overflow-y: auto;
 	}
 
 	.swiper-pagination-progressbar {
@@ -494,9 +483,6 @@
 		overflow: visible;
 	}
 
-	.swiper-pagination-fraction {
-		color: #fff;
-	}
 	.racecar-marker {
 		position: absolute;
 		top: -11px;
@@ -505,9 +491,87 @@
 		background-image: url(/racecar.svg);
 		background-size: contain;
 		background-repeat: no-repeat;
+		background-position: center;
 		transform: translateX(-50%);
 		transition: left 0.3s ease-in-out;
 		pointer-events: none;
-		z-index: 1;
+		z-index: 3;
+	}
+
+	.nav-btn {
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		border: 1px solid rgba(255, 255, 255, 0.28);
+		border-radius: 0;
+		background: rgba(8, 8, 10, 0.7);
+		color: #fff;
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: border-color 0.2s, background 0.2s;
+	}
+
+	.nav-btn:hover:not(:disabled) {
+		border-color: var(--team-text);
+		background: rgba(8, 8, 10, 0.9);
+	}
+
+	.nav-btn:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+
+	.nav-side {
+		position: absolute;
+		top: 50%;
+		margin-top: -22px;
+		z-index: 2;
+	}
+
+	.nav-side-prev {
+		left: 20px;
+	}
+
+	.nav-side-next {
+		right: 20px;
+	}
+
+	.nav-bottom {
+		display: none;
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 24px;
+		align-items: center;
+		justify-content: center;
+		gap: 20px;
+		z-index: 2;
+	}
+
+	.nav-count {
+		font-size: 14px;
+		letter-spacing: 0.1em;
+		min-width: 72px;
+		text-align: center;
+		color: #fff;
+	}
+
+	/* Mobile view */
+	@media (max-width: 768px) {
+		.swiper-slide {
+			padding: 44px 16px 96px;
+		}
+
+		.racecar-marker,
+		.nav-side {
+			display: none;
+		}
+
+		.nav-bottom {
+			display: flex;
+		}
 	}
 </style>
