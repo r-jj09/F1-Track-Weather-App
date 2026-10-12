@@ -2,6 +2,7 @@
 	import { computed, onMounted, watch, ref, onUnmounted, toRefs } from "vue";
 	import { Skycons } from "skycons-ts";
 	import VanillaTilt from "vanilla-tilt";
+	import { todayAtTrack, trackDate } from "../utils/dates";
 
 	const props = defineProps({
 		track: Object,
@@ -27,40 +28,23 @@
 		return { label: "Extreme", color: "#8E3BD9", textColor: "#ffffff" };
 	});
 
-	// Is it Race Day?
-	const isRaceDay = computed(() => {
-		const today = new Date();
-		const raceDate = new Date(track.date);
-		const todayDateOnly = new Date(
-			today.getFullYear(),
-			today.getMonth(),
-			today.getDate()
-		);
-		const raceDateOnly = new Date(
-			raceDate.getFullYear(),
-			raceDate.getMonth(),
-			raceDate.getDate()
-		);
-
-		return raceDateOnly.getTime() === todayDateOnly.getTime();
-	});
+	// Is it Race Day? (track.date is the local date at the track)
+	const todayHere = todayAtTrack(track.weather);
+	const isRaceDay = computed(() => track.date === todayHere);
 
 	// Already raced this season
-	const isPastRace = computed(
-		() => !isRaceDay.value && new Date(track.date) < new Date()
-	);
+	const isPastRace = computed(() => track.date < todayHere);
 
 	// Race Day Forecast logic
+	// `daily` covers today + the next 7 days, so this only matches once the race is inside that window
 	const raceDayForecast = computed(() => {
 		const forecastArray = track.weather?.daily;
 		if (!forecastArray) return null;
 
-		const raceDate = new Date(track.date);
+		const offset = track.weather.timezone_offset ?? 0;
 		return (
-			forecastArray.find((day) => {
-				const forecastDate = new Date(day.dt * 1000);
-				return forecastDate.toDateString() === raceDate.toDateString();
-			}) || null
+			forecastArray.find((day) => trackDate(day.dt, offset) === track.date) ||
+			null
 		);
 	});
 
@@ -69,6 +53,7 @@
 		year: "numeric",
 		month: "short",
 		day: "numeric",
+		timeZone: "UTC", // "YYYY-MM-DD" parses as UTC, keep it there so it doesn't shift a day
 	});
 
 	// Format local time
@@ -231,7 +216,7 @@
 				</div>
 			</div>
 
-			<div v-if="raceDayForecast && !isRaceDay" class="section">
+			<div v-if="raceDayForecast" class="section">
 				<div class="label section-title muted">RACE DAY FORECAST</div>
 				<div class="stats-row forecast-row">
 					<div class="stat-cell">
@@ -247,9 +232,6 @@
 						<span class="stat-value capitalize">{{ raceDayForecast.weather[0].description }}</span>
 					</div>
 				</div>
-			</div>
-			<div v-else-if="isRaceDay" class="forecast-unavailable">
-				Race day forecast is not available yet.
 			</div>
 		</template>
 		<div v-else class="forecast-unavailable">Loading weather...</div>

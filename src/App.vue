@@ -6,6 +6,7 @@
 	import { Pagination } from "swiper/modules";
 	import TrackWeather from "./components/TrackWeather.vue";
 	import OffSeason from "./components/OffSeason.vue";
+	import { todayLocal } from "./utils/dates";
 	const currentYear = new Date().getFullYear();
   const modules = import.meta.glob("/src/data/*tracks.json", { eager: true });
   const tracksBackUp = modules["/src/data/tracks.json"];
@@ -57,7 +58,7 @@
     }
 
     if (tracks.value && tracks.value.length) {
-      const today = new Date();
+      const today = todayLocal();
 
       const todayRaceIndex = tracks.value.findIndex((track) =>
           isToday(track.date)
@@ -70,7 +71,7 @@
       } else {
         // Look for the next race in the future
         const nextIdx = tracks.value.findIndex(
-            (track) => new Date(track.date) >= today
+            (track) => track.date >= today
         );
 
         if (nextIdx !== -1) {
@@ -196,7 +197,7 @@
   // Find next race index
 	const nextRaceIndex = computed(() => {
 		return tracks.value.findIndex(
-			(track) => new Date(track.date) >= new Date()
+			(track) => track.date >= todayLocal()
 		);
 	});
 
@@ -265,13 +266,7 @@
 	});
 
 	function isToday(dateStr) {
-		const today = new Date();
-		const date = new Date(dateStr);
-		return (
-			date.getFullYear() === today.getFullYear() &&
-			date.getMonth() === today.getMonth() &&
-			date.getDate() === today.getDate()
-		);
+		return dateStr === todayLocal();
 	}
 
 	const teamColors = {
