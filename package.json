@@ -14,7 +14,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
     "@upstash/redis": "^1.39.0",
-    "@vercel/functions": "^3.9.11",
+    "@vercel/functions": "^3.11.3",
     "skycons-ts": "^1.0.0",
     "swiper": "^12.1.2",
     "vanilla-tilt": "^1.8.1",
